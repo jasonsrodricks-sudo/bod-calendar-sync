@@ -3,6 +3,7 @@ import json
 import requests
 import io
 import zipfile
+import hashlib
 from datetime import datetime, timezone
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -254,20 +255,29 @@ buildHealth();
     return html
 
 def deploy_to_netlify(html_content):
-    url = f'https://api.netlify.com/api/v1/sites/{NETLIFY_SITE_ID}/deploys'
-    zip_buffer = io.BytesIO()
-    netlify_headers = '/*\n  Content-Type: text/html; charset=UTF-8\n'
-    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr('index.html', html_content.encode('utf-8'))
-        zf.writestr('_headers', netlify_headers.encode('utf-8'))
-    zip_buffer.seek(0)
+    encoded = html_content.encode('utf-8')
+    sha1 = hashlib.sha1(encoded).hexdigest()
     headers = {
         'Authorization': f'Bearer {NETLIFY_AUTH_TOKEN}',
-        'Content-Type': 'application/zip'
+        'Content-Type': 'application/json'
     }
-    response = requests.post(url, headers=headers, data=zip_buffer.getvalue())
-    print(f'Netlify deploy status: {response.status_code}')
-    print(response.text[:300])
+    url = f'https://api.netlify.com/api/v1/sites/{NETLIFY_SITE_ID}/deploys'
+    manifest = requests.post(url, headers=headers, json={
+        'files': {'/index.html': sha1}
+    })
+    manifest_data = manifest.json()
+    print(f'Manifest status: {manifest.status_code}')
+    deploy_id = manifest_data.get('id')
+    required = manifest_data.get('required', [])
+    if required:
+        upload_url = f'https://api.netlify.com/api/v1/deploys/{deploy_id}/files/index.html'
+        upload_headers = {
+            'Authorization': f'Bearer {NETLIFY_AUTH_TOKEN}',
+            'Content-Type': 'text/html; charset=UTF-8'
+        }
+        upload = requests.put(upload_url, headers=upload_headers, data=encoded)
+        print(f'Upload status: {upload.status_code}')
+    print(f'Deploy ID: {deploy_id}')
 
 if __name__ == '__main__':
     service = get_calendar_service()
