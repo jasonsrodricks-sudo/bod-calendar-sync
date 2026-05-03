@@ -260,12 +260,9 @@ footer strong{color:var(--gold);}
   </div>
   <div style="display:grid;gap:2px;margin-bottom:2px;">
     <div class="card">
-      <span class="card-type">Today's Agenda</span>
-      <div class="card-title">Calendar</div>
-      <ul class="agenda-list">
-        <li class="agenda-item"><span class="agenda-time">8:00 AM</span><span class="agenda-desc">Morning check-in</span></li>
-        <li class="agenda-item"><span class="agenda-time">—</span><span class="agenda-desc" style="font-family:'Playfair Display',serif;font-style:italic;color:rgba(0,0,0,0.2);">Connect your calendar to populate this.</span></li>
-      </ul>
+      <span class="card-type">Week Ahead</span>
+      <div class="card-title">Coming Up</div>
+      <div id="week-ahead-list" style="margin-top:4px;"></div>
     </div>
   </div>
   <!-- PUNCHLIST -->
@@ -461,7 +458,14 @@ async function sbUpsert(table,data){try{await fetch(SUPABASE_URL+'/rest/v1/'+tab
 async function sbGet(table,filter){try{var res=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?'+filter,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});return await res.json();}catch(e){return[];}}
 async function saveCheck(itemId,checked){await sbUpsert('daily_checklist',{date:todayStr(),item_id:itemId,checked:checked});}
 async function loadChecks(){var rows=await sbGet('daily_checklist','date=eq.'+todayStr());var map={};if(Array.isArray(rows))rows.forEach(function(r){map[r.item_id]=r.checked;});return map;}
-async function saveHealthStat(exercise,sets,total){await sbUpsert('health_stats',{date:todayStr(),exercise:exercise,sets_completed:sets,total:total});}
+function saveHealthStat(exercise,sets,total){
+  var key='hz-'+todayStr()+'-'+exercise;
+  localStorage.setItem(key,JSON.stringify({sets:sets,total:total}));
+}
+function loadHealthStat(exercise){
+  var key='hz-'+todayStr()+'-'+exercise;
+  try{var v=localStorage.getItem(key);return v?JSON.parse(v):null;}catch(e){return null;}
+}
 // ---- LOCAL STORAGE FALLBACK ----
 function save(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}}
 function load(key,fallback){try{var v=localStorage.getItem(key);return v!==null?JSON.parse(v):fallback;}catch(e){return fallback;}}
@@ -486,7 +490,7 @@ function updateClock(){
 setInterval(updateClock,1000);updateClock();
 
 // ---- WEATHER CONFIG ----
-var OW_KEY='PASTE_YOUR_OPENWEATHER_KEY_HERE';
+var OW_KEY='97e4152955b93d806d879bb0a8e65a96';
 var OW_CITY='Beverly,MA,US';
 
 async function fetchWeather(){
@@ -807,7 +811,34 @@ function hzBuild(){
   var g=document.getElementById('hz-grand');
   if(g)g.textContent=grand||'0';
 }
+// Load saved health zone state for today
+HZ_EXERCISES.forEach(function(ex,ei){
+  var saved=loadHealthStat(ex.name);
+  if(saved){
+    var sets=saved.sets;
+    for(var si=0;si<sets&&si<HZ_SETS;si++){hzState[ei][si]=true;}
+  }
+});
 hzBuild();
+
+// Week Ahead
+async function loadWeekAhead(){
+  var el=document.getElementById('week-ahead-list');
+  if(!el)return;
+  var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var now=new Date();
+  var items='';
+  for(var i=1;i<=5;i++){
+    var d=new Date(now);d.setDate(now.getDate()+i);
+    var label=days[d.getDay()]+' '+months[d.getMonth()]+' '+d.getDate();
+    items+='<div style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;gap:10px;">';
+    items+='<span style="font-size:9px;letter-spacing:0.1em;color:var(--gold);min-width:70px;padding-top:2px;">'+label+'</span>';
+    items+='<span style="font-size:11px;color:var(--muted);">—</span></div>';
+  }
+  el.innerHTML=items;
+}
+loadWeekAhead();
 
 
 // ---- CONSTRUCTION ----
