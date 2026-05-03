@@ -263,20 +263,12 @@ def deploy_to_netlify(html_content):
     import base64, zipfile, io
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr('index.html', html_content)
+        zf.writestr('index.html', html_content.encode('utf-8'))
     zip_buffer.seek(0)
     headers = {
         'Authorization': f'Bearer {NETLIFY_AUTH_TOKEN}',
         'Content-Type': 'application/zip'
     }
-    response = requests.post(url, headers=headers, data=zip_buffer.read())
+    response = requests.post(url, headers=headers, data=zip_buffer.getvalue())
     print(f'Netlify deploy status: {response.status_code}')
     print(response.text[:500])
-
-if __name__ == '__main__':
-    service = get_calendar_service()
-    events = get_todays_events(service)
-    print(f'Found {len(events)} events today')
-    html = build_html(events)
-    deploy_to_netlify(html)
-    print('Done!')
