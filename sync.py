@@ -101,7 +101,7 @@ body{{background:var(--cream);color:var(--black);font-family:'DM Mono',monospace
 .dot{{width:3px;height:3px;border-radius:50%;background:var(--black);opacity:0.4;}}
 .main{{padding:24px 28px 0;max-width:1200px;margin:0 auto;}}
 .prog-row{{display:flex;align-items:center;gap:14px;margin-bottom:20px;}}
-.prog-label{{font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--muted);}}
+.prog-label-text{{font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--muted);}}
 .prog-track{{flex:1;height:3px;background:rgba(0,0,0,0.1);border-radius:2px;}}
 .prog-fill{{height:3px;background:var(--gold);border-radius:2px;transition:width 0.4s ease;}}
 .prog-pct{{font-size:13px;font-weight:500;color:var(--gold);min-width:36px;text-align:right;}}
@@ -120,7 +120,6 @@ body{{background:var(--cream);color:var(--black);font-family:'DM Mono',monospace
 .item.done .check::after{{content:'';display:block;width:4px;height:8px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px);}}
 .inum{{font-family:'Bebas Neue',sans-serif;font-size:26px;color:rgba(0,0,0,0.07);line-height:1;min-width:22px;}}
 .itext{{font-size:12px;color:var(--black);line-height:1.5;flex:1;}}
-.isub{{font-size:10px;color:var(--muted);margin-top:2px;}}
 .atime{{font-size:9px;letter-spacing:0.1em;color:var(--gold);min-width:82px;padding-top:2px;flex-shrink:0;font-weight:500;}}
 .rem-label{{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);padding:12px 0 6px;border-top:1px solid rgba(0,0,0,0.06);margin-top:4px;}}
 .rem-item{{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.04);cursor:pointer;user-select:none;}}
@@ -164,7 +163,7 @@ body{{background:var(--cream);color:var(--black);font-family:'DM Mono',monospace
 </div>
 <div class="main">
   <div class="prog-row">
-    <span class="prog-label">Day Progress</span>
+    <span class="prog-label-text">Day Progress</span>
     <div class="prog-track"><div class="prog-fill" id="pfill" style="width:0%"></div></div>
     <span class="prog-pct" id="ppct">0%</span>
   </div>
@@ -257,8 +256,10 @@ buildHealth();
 def deploy_to_netlify(html_content):
     url = f'https://api.netlify.com/api/v1/sites/{NETLIFY_SITE_ID}/deploys'
     zip_buffer = io.BytesIO()
+    netlify_headers = '/*\n  Content-Type: text/html; charset=UTF-8\n'
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
         zf.writestr('index.html', html_content.encode('utf-8'))
+        zf.writestr('_headers', netlify_headers.encode('utf-8'))
     zip_buffer.seek(0)
     headers = {
         'Authorization': f'Bearer {NETLIFY_AUTH_TOKEN}',
