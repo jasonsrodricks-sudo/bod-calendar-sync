@@ -1,6 +1,8 @@
 import os
 import json
 import requests
+import io
+import zipfile
 from datetime import datetime, timezone
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -11,7 +13,7 @@ TOKEN_JSON = os.environ.get('TOKEN_JSON')
 NETLIFY_SITE_ID = os.environ.get('NETLIFY_SITE_ID')
 NETLIFY_AUTH_TOKEN = os.environ.get('NETLIFY_AUTH_TOKEN')
 
-DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
 def get_calendar_service():
@@ -47,18 +49,13 @@ def format_time(dt_str):
 
 def build_html(events):
     now = datetime.now()
-    day_name = DAYS[now.weekday() + 1 if now.weekday() < 6 else 0]
-    # Python weekday: 0=Mon, fix for JS style
-    import calendar
-    day_name = DAYS[now.toordinal() % 7]
+    day_name = DAYS[now.weekday()]
     month_name = MONTHS[now.month - 1]
-    date_str = f'{day_name} {month_name} {now.day}'
 
     priorities = [e for e in events if 'top priority' in e.get('summary','').lower()]
     reminders = [e for e in events if not e.get('start',{}).get('dateTime') and 'top priority' not in e.get('summary','').lower()]
     agenda = [e for e in events if e.get('start',{}).get('dateTime')]
 
-    # Fill priorities to minimum 3
     if len(priorities) < 3:
         timed = [e for e in agenda if e not in priorities]
         while len(priorities) < 3 and timed:
@@ -66,28 +63,28 @@ def build_html(events):
 
     p_items = ''
     for i, e in enumerate(priorities[:5]):
-        title = e.get('summary','').replace(' — top priority','').replace(' top priority','')
-        p_items += f'<div class="item" onclick="toggle(this)"><div class="check"></div><div class="inum">0{i+1}</div><div style="flex:1"><div class="itext">{title}</div></div></div>'
+        title = e.get('summary','').replace(' — top priority','').replace(' top priority','').replace('top priority — ','').replace('top priority','').strip()
+        p_items += f'<div class="item" onclick="this.classList.toggle(\'done\');updateProgress()"><div class="check"></div><div class="inum">0{i+1}</div><div style="flex:1"><div class="itext">{title}</div></div></div>\n'
 
     r_items = ''
     for e in reminders:
         title = e.get('summary','')
-        r_items += f'<div class="rem-item" onclick="toggleRem(this)"><div class="rem-check"></div><span class="rem-text">{title}</span></div>'
+        r_items += f'<div class="rem-item" onclick="this.classList.toggle(\'done\');updateProgress()"><div class="rem-check"></div><span class="rem-text">{title}</span></div>\n'
 
     a_items = ''
     for e in agenda:
         title = e.get('summary','')
         time_str = format_time(e.get('start',{}).get('dateTime',''))
-        sub = e.get('description','')
-        sub_html = f'<div class="isub">{sub}</div>' if sub else ''
-        a_items += f'<div class="item" onclick="toggle(this)"><div class="check"></div><span class="atime">{time_str}</span><div style="flex:1"><div class="itext">{title}</div>{sub_html}</div></div>'
+        a_items += f'<div class="item" onclick="this.classList.toggle(\'done\');updateProgress()"><div class="check"></div><span class="atime">{time_str}</span><div style="flex:1"><div class="itext">{title}</div></div></div>\n'
 
-    return f'''<!DOCTYPE html>
+    total_items = len(priorities[:5]) + len(list(reminders)) + len(agenda)
+
+    html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard — {date_str}</title>
+<title>{day_name} {month_name} {now.day}</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
 <style>
 *{{box-sizing:border-box;margin:0;padding:0;}}
@@ -133,7 +130,7 @@ body{{background:var(--cream);color:var(--black);font-family:'DM Mono',monospace
 .rem-item.done .rem-check{{background:var(--green);border-color:var(--green);}}
 .rem-item.done .rem-check::after{{content:'';display:block;width:3px;height:6px;border:1.5px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px);}}
 .rem-text{{font-size:11px;color:var(--muted);}}
-.reset-btn{{display:inline-block;margin-top:14px;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);border:1px solid rgba(0,0,0,0.12);padding:6px 14px;cursor:pointer;background:transparent;transition:all 0.2s;}}
+.reset-btn{{display:inline-block;margin-top:14px;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);border:1px solid rgba(0,0,0,0.12);padding:6px 14px;cursor:pointer;background:transparent;}}
 .health-card{{background:var(--navy75);border:1px solid rgba(26,39,68,0.4);padding:20px 22px 16px;position:relative;overflow:hidden;margin-top:2px;}}
 .health-badge{{display:inline-block;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);padding:3px 9px;border-radius:2px;margin-bottom:10px;}}
 .health-title{{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:0.04em;color:var(--cream);line-height:1;margin-bottom:12px;}}
@@ -149,17 +146,17 @@ body{{background:var(--cream);color:var(--black);font-family:'DM Mono',monospace
 .ex-total{{font-size:11px;font-weight:500;color:var(--gold);text-align:right;}}
 .health-footer{{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);}}
 .health-total-label{{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(242,237,228,0.45);}}
-.health-grand-total{{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);letter-spacing:0.05em;}}
+.health-grand{{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--gold);letter-spacing:0.05em;}}
 </style>
 </head>
 <body>
 <div class="topbar">
   <div class="eyebrow">Bored of Directors · Daily Punchlist</div>
-  <div class="heading">{DAYS[now.toordinal() % 7]} <span>{MONTHS[now.month-1]} {now.day}</span></div>
+  <div class="heading">{day_name} <span>{month_name} {now.day}</span></div>
   <div class="tagline">Connection is the only currency</div>
 </div>
 <div class="goldbar">
-  <span id="prog-label">0 done</span>
+  <span id="prog-label">0 of {total_items} done</span>
   <div class="dot"></div>
   <span>Beverly, MA</span>
   <div class="dot"></div>
@@ -183,7 +180,7 @@ body{{background:var(--cream);color:var(--black);font-family:'DM Mono',monospace
       <span class="badge">Schedule</span>
       <div class="card-title">Full Agenda</div>
       {a_items}
-      <button class="reset-btn" onclick="resetAll()">↺ Reset Day</button>
+      <button class="reset-btn" onclick="resetAll()">Reset Day</button>
     </div>
   </div>
   <div class="health-card">
@@ -195,12 +192,12 @@ body{{background:var(--cream);color:var(--black);font-family:'DM Mono',monospace
     </table>
     <div class="health-footer">
       <span class="health-total-label">Day Total</span>
-      <span class="health-grand-total" id="hgrand">0</span>
+      <span class="health-grand" id="hgrand">0</span>
     </div>
   </div>
 </div>
 <script>
-var TOTAL = document.querySelectorAll('.item, .rem-item').length;
+var TOTAL = {total_items};
 function updateProgress(){{
   var done = document.querySelectorAll('.item.done, .rem-item.done').length;
   var pct = TOTAL ? Math.round(done/TOTAL*100) : 0;
@@ -208,12 +205,12 @@ function updateProgress(){{
   document.getElementById('ppct').textContent = pct + '%';
   document.getElementById('prog-label').textContent = done + ' of ' + TOTAL + ' done';
 }}
-function toggle(el){{ el.classList.toggle('done'); updateProgress(); }}
-function toggleRem(el){{ el.classList.toggle('done'); updateProgress(); }}
 function resetAll(){{
-  document.querySelectorAll('.item.done, .rem-item.done').forEach(function(el){{ el.classList.remove('done'); }});
-  document.querySelectorAll('.set-box.on').forEach(function(b){{ b.classList.remove('on'); b.textContent=''; }});
-  updateProgress(); buildHealth();
+  document.querySelectorAll('.item.done,.rem-item.done').forEach(function(el){{el.classList.remove('done');}});
+  document.querySelectorAll('.set-box.on').forEach(function(b){{b.classList.remove('on');b.textContent='';}});
+  document.getElementById('hgrand').textContent='0';
+  document.querySelectorAll('.ex-total').forEach(function(t){{t.textContent='';}});
+  updateProgress();
 }}
 var HZ=[
   {{name:'Meditate',target:'20 min',val:20}},
@@ -224,43 +221,41 @@ var HZ=[
   {{name:'Pull ups',target:'5 reps',val:5}},
   {{name:'Cardio',target:'100 cal',val:100}},
 ];
-var hzState = HZ.map(function(){{ return [false,false,false,false,false,false]; }});
+var hzState=HZ.map(function(){{return [false,false,false,false,false,false];}});
 function buildHealth(){{
-  var tbody = document.getElementById('hbody');
-  tbody.innerHTML = '';
-  var grand = 0;
-  HZ.forEach(function(ex, ei){{
-    var tr = document.createElement('tr');
-    var rowTotal = hzState[ei].filter(Boolean).length * ex.val;
-    grand += rowTotal;
-    var td0 = document.createElement('td');
-    td0.innerHTML = '<div class="ex-name">'+ex.name+'</div><div class="ex-target">'+ex.target+'/set</div>';
+  var tbody=document.getElementById('hbody');
+  tbody.innerHTML='';
+  var grand=0;
+  HZ.forEach(function(ex,ei){{
+    var tr=document.createElement('tr');
+    var rowTotal=hzState[ei].filter(Boolean).length*ex.val;
+    grand+=rowTotal;
+    var td0=document.createElement('td');
+    td0.innerHTML='<div class="ex-name">'+ex.name+'</div><div class="ex-target">'+ex.target+'/set</div>';
     tr.appendChild(td0);
     for(var si=0;si<6;si++){{
-      var td = document.createElement('td');
-      var box = document.createElement('div');
-      box.className = 'set-box' + (hzState[ei][si] ? ' on' : '');
-      box.textContent = hzState[ei][si] ? '✓' : '';
-      (function(eix,six){{ box.onclick = function(){{ hzState[eix][six]=!hzState[eix][six]; buildHealth(); }}; }})(ei,si);
-      td.appendChild(box); tr.appendChild(td);
+      var td=document.createElement('td');
+      var box=document.createElement('div');
+      box.className='set-box'+(hzState[ei][si]?' on':'');
+      box.textContent=hzState[ei][si]?'✓':'';
+      (function(eix,six){{box.onclick=function(){{hzState[eix][six]=!hzState[eix][six];buildHealth();}};}})(ei,si);
+      td.appendChild(box);tr.appendChild(td);
     }}
-    var tdT = document.createElement('td');
-    tdT.className = 'ex-total';
-    tdT.textContent = rowTotal || '';
-    tr.appendChild(tdT);
-    tbody.appendChild(tr);
+    var tdT=document.createElement('td');
+    tdT.className='ex-total';
+    tdT.textContent=rowTotal||'';
+    tr.appendChild(tdT);tbody.appendChild(tr);
   }});
-  document.getElementById('hgrand').textContent = grand || '0';
+  document.getElementById('hgrand').textContent=grand||'0';
 }}
 buildHealth();
-updateProgress();
 </script>
 </body>
-</html>'''
+</html>"""
+    return html
 
 def deploy_to_netlify(html_content):
     url = f'https://api.netlify.com/api/v1/sites/{NETLIFY_SITE_ID}/deploys'
-    import base64, zipfile, io
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
         zf.writestr('index.html', html_content.encode('utf-8'))
@@ -271,4 +266,12 @@ def deploy_to_netlify(html_content):
     }
     response = requests.post(url, headers=headers, data=zip_buffer.getvalue())
     print(f'Netlify deploy status: {response.status_code}')
-    print(response.text[:500])
+    print(response.text[:300])
+
+if __name__ == '__main__':
+    service = get_calendar_service()
+    events = get_todays_events(service)
+    print(f'Found {len(events)} events today')
+    html = build_html(events)
+    deploy_to_netlify(html)
+    print('Done!')
