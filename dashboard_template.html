@@ -134,6 +134,7 @@ footer strong{color:var(--gold);}
 .pl-text{font-size:12px;line-height:1.5;color:var(--black);flex:1;}
 .pl-time{font-size:10px;letter-spacing:0.1em;color:var(--gold);min-width:70px;flex-shrink:0;padding-top:2px;}
 .pl-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.pl-time.allday{color:var(--muted);font-style:italic;}
 .pl-reset{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);border:1px solid rgba(0,0,0,0.1);padding:5px 12px;cursor:pointer;background:transparent;font-family:'DM Mono',monospace;margin-top:12px;display:inline-block;transition:all 0.2s;}
 .pl-reset:hover{border-color:var(--rust);color:var(--rust);}
 /* CONSTRUCTION */
@@ -200,25 +201,6 @@ footer strong{color:var(--gold);}
 .completed-paid::placeholder{color:rgba(0,0,0,0.2);}
 .completed-restore{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);border:none;background:transparent;cursor:pointer;font-family:'DM Mono',monospace;padding:0 6px;opacity:0.5;}
 .completed-restore:hover{opacity:1;color:var(--rust);}
-/* HEALTH ZONE */
-.health-zone-card{background:rgba(26,39,68,0.75);border:1px solid rgba(26,39,68,0.4);padding:20px 24px 16px;position:relative;overflow:hidden;margin-top:2px;}
-.health-zone-card::after{content:"";position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform 0.3s ease;}
-.health-zone-card:hover::after{transform:scaleX(1);}
-.hz-badge{display:inline-block;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);padding:3px 9px;border-radius:2px;margin-bottom:10px;}
-.hz-title{font-family:"Bebas Neue",sans-serif;font-size:24px;letter-spacing:0.04em;color:var(--cream);line-height:1;margin-bottom:12px;}
-.hz-table{width:100%;border-collapse:collapse;margin-top:4px;}
-.hz-table th{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(242,237,228,0.5);font-family:"DM Mono",monospace;font-weight:400;padding:4px 6px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.1);}
-.hz-table th.left{text-align:left;}
-.hz-table td{padding:6px;border-bottom:1px solid rgba(255,255,255,0.05);vertical-align:middle;}
-.hz-table tr:last-child td{border-bottom:none;}
-.hz-ex-name{font-size:11px;color:var(--cream);font-family:"DM Mono",monospace;white-space:nowrap;}
-.hz-ex-target{font-size:9px;color:rgba(242,237,228,0.45);font-family:"DM Mono",monospace;}
-.hz-set-box{width:22px;height:22px;border-radius:3px;border:1.5px solid rgba(255,255,255,0.2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;margin:0 auto;user-select:none;font-size:10px;}
-.hz-set-box.on{background:var(--gold);border-color:var(--gold);}
-.hz-total{font-family:"DM Mono",monospace;font-size:11px;font-weight:500;color:var(--gold);text-align:right;}
-.hz-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);}
-.hz-footer-label{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(242,237,228,0.45);font-family:"DM Mono",monospace;}
-.hz-grand-total{font-family:"Bebas Neue",sans-serif;font-size:22px;color:var(--gold);letter-spacing:0.05em;}
 @media(max-width:640px){.top-row,.proj-grid,.bottom-row,.punchlist-grid,.con-grid-2{grid-template-columns:1fr;}.bod-card.featured,.con-card.featured{grid-column:span 1;}.main,.proj-main,.con-main{padding:28px 16px 40px;}}
 </style>
 </head>
@@ -260,14 +242,17 @@ footer strong{color:var(--gold);}
   </div>
   <div style="display:grid;gap:2px;margin-bottom:2px;">
     <div class="card">
-      <span class="card-type">Week Ahead</span>
-      <div class="card-title">Coming Up</div>
-      <div id="week-ahead-list" style="margin-top:4px;"></div>
+      <span class="card-type">Today's Agenda</span>
+      <div class="card-title">Calendar</div>
+      <ul class="agenda-list">
+        <li class="agenda-item"><span class="agenda-time">8:00 AM</span><span class="agenda-desc">Morning check-in</span></li>
+        <li class="agenda-item"><span class="agenda-time">—</span><span class="agenda-desc" style="font-family:'Playfair Display',serif;font-style:italic;color:rgba(0,0,0,0.2);">Connect your calendar to populate this.</span></li>
+      </ul>
     </div>
   </div>
   <!-- PUNCHLIST -->
   <div class="punchlist-section">
-    <div class="section-label" style="margin-top:8px;" id="pl-date-label">Today's Punchlist</div>
+    <div class="section-label" style="margin-top:8px;">Today's Punchlist — Wednesday April 29</div>
     <div class="progress-wrap">
       <span class="progress-label">Day Progress</span>
       <div class="progress-track"><div class="progress-fill" id="pl-fill" style="width:0%"></div></div>
@@ -285,20 +270,6 @@ footer strong{color:var(--gold);}
         <div id="pl-agenda"></div>
         <button class="pl-reset" onclick="plResetAll()">↺ Reset Day</button>
       </div>
-    </div>
-  </div>
-
-  <!-- HEALTH ZONE -->
-  <div class="health-zone-card">
-    <span class="hz-badge">Health Zone</span>
-    <div class="hz-title">Daily Movement</div>
-    <table class="hz-table">
-      <thead><tr><th class="left">Exercise</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>Total</th></tr></thead>
-      <tbody id="hz-body"></tbody>
-    </table>
-    <div class="hz-footer">
-      <span class="hz-footer-label">Day Total</span>
-      <span class="hz-grand-total" id="hz-grand">0</span>
     </div>
   </div>
   <div style="display:grid;gap:2px;margin-bottom:2px;">
@@ -444,31 +415,35 @@ var QUOTES=[
   {text:"The quieter you become, the more you are able to hear.",attr:"Yung Pueblo"},
   {text:"Muddy water is best cleared by leaving it alone.",attr:"Alan Watts"},
   {text:"Growth is learning to love yourself through every version of who you have been.",attr:"Yung Pueblo"},
+  {text:"We cannot make good news out of bad practice.",attr:"Edward R. Murrow"},
+  {text:"No man ever steps in the same river twice, for it is not the same river and he is not the same man.",attr:"Heraclitus"},
+  {text:"Man suffers only because he takes seriously what the gods made for fun.",attr:"Alan Watts"},
+  {text:"The more you try to grasp your self, the more it eludes you.",attr:"Alan Watts"},
+  {text:"Inner peace begins the moment you choose not to allow another person or event to control your emotions.",attr:"Yung Pueblo"},
+  {text:"Everything you do right now ripples outward and affects everyone. Your posture can shine your heart or transmit anxiety.",attr:"David Deida"},
+  {text:"To have faith is to trust yourself to the water. When you swim you don't grab hold of the water, because if you do you will sink and drown.",attr:"Alan Watts"},
+  {text:"The truth is: you don't have a life, you are life.",attr:"Alan Watts"},
+  {text:"Letting go does not mean you stop caring. It means you stop trying to force others to.",attr:"Mandy Hale"},
+  {text:"Softening is not weakness. It is the courage to remain open.",attr:"Yung Pueblo"},
+  {text:"This is the real secret of life — to be completely engaged with what you are doing in the here and now.",attr:"Alan Watts"},
+  {text:"The present moment is the only moment available to us, and it is the door to all moments.",attr:"Thich Nhat Hanh"},
+  {text:"You are enough just as you are. Each emotion you feel, everything in your life, everything you do or do not do — it is enough.",attr:"Yung Pueblo"},
+  {text:"In the beginner's mind there are many possibilities, but in the expert's mind there are few.",attr:"Shunryu Suzuki"},
+  {text:"What you resist, persists. What you accept, transforms.",attr:"Carl Jung"},
+  {text:"The wound is the place where the light enters you.",attr:"Rumi"},
+  {text:"Stop acting so small. You are the universe in ecstatic motion.",attr:"Rumi"},
+  {text:"Out beyond ideas of wrongdoing and rightdoing, there is a field. I will meet you there.",attr:"Rumi"},
+  {text:"Your task is not to seek for love, but merely to seek and find all the barriers within yourself that you have built against it.",attr:"Rumi"},
+  {text:"Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself.",attr:"Rumi"},
 ];
 
 var WEEK=[{d:'MON',icon:'☀️',hi:'56'},{d:'TUE',icon:'⛅',hi:'49'},{d:'WED',icon:'🌥️',hi:'51'},{d:'THU',icon:'🌧️',hi:'51'},{d:'FRI',icon:'⛅',hi:'55'}];
 var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-// ---- SUPABASE CONFIG — paste your keys here ----
-var SUPABASE_URL='PASTE_YOUR_PROJECT_URL_HERE';
-var SUPABASE_KEY='PASTE_YOUR_PUBLISHABLE_KEY_HERE';
-function todayStr(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-async function sbUpsert(table,data){try{await fetch(SUPABASE_URL+'/rest/v1/'+table,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(data)});}catch(e){}}
-async function sbGet(table,filter){try{var res=await fetch(SUPABASE_URL+'/rest/v1/'+table+'?'+filter,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});return await res.json();}catch(e){return[];}}
-async function saveCheck(itemId,checked){await sbUpsert('daily_checklist',{date:todayStr(),item_id:itemId,checked:checked});}
-async function loadChecks(){var rows=await sbGet('daily_checklist','date=eq.'+todayStr());var map={};if(Array.isArray(rows))rows.forEach(function(r){map[r.item_id]=r.checked;});return map;}
-function saveHealthStat(exercise,sets,total){
-  var key='hz-'+todayStr()+'-'+exercise;
-  localStorage.setItem(key,JSON.stringify({sets:sets,total:total}));
-}
-function loadHealthStat(exercise){
-  var key='hz-'+todayStr()+'-'+exercise;
-  try{var v=localStorage.getItem(key);return v?JSON.parse(v):null;}catch(e){return null;}
-}
-// ---- LOCAL STORAGE FALLBACK ----
-function save(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}}
-function load(key,fallback){try{var v=localStorage.getItem(key);return v!==null?JSON.parse(v):fallback;}catch(e){return fallback;}}
+// ---- STORAGE HELPERS ----
+function save(key,val){try{window.storage.set(key,JSON.stringify(val));}catch(e){}}
+function load(key,fallback){try{var r=window.storage.get(key);return r&&r.value?JSON.parse(r.value):fallback;}catch(e){return fallback;}}
 
 function flashSaved(id){
   var el=document.getElementById(id);
@@ -488,69 +463,6 @@ function updateClock(){
   document.getElementById('eyebrow-date').textContent=DAYS[now.getDay()]+' · '+MONTHS[now.getMonth()]+' '+now.getDate()+', '+now.getFullYear();
 }
 setInterval(updateClock,1000);updateClock();
-
-// ---- WEATHER CONFIG ----
-var OW_KEY='97e4152955b93d806d879bb0a8e65a96';
-var OW_CITY='Beverly,MA,US';
-
-async function fetchWeather(){
-  try{
-    var cur=await fetch('https://api.openweathermap.org/data/2.5/weather?q='+OW_CITY+'&appid='+OW_KEY+'&units=imperial');
-    var curData=await cur.json();
-    var fore=await fetch('https://api.openweathermap.org/data/2.5/forecast?q='+OW_CITY+'&appid='+OW_KEY+'&units=imperial&cnt=40');
-    var foreData=await fore.json();
-
-    // Current
-    var temp=Math.round(curData.main.temp);
-    var high=Math.round(curData.main.temp_max);
-    var desc=curData.weather[0].main;
-    var icon=weatherIcon(curData.weather[0].id);
-
-    document.querySelector('.weather-temp').textContent=temp+'°';
-    document.querySelector('.weather-cond').textContent=icon+' '+desc+' · High '+high+'°';
-
-    // 5-day forecast
-    var days=['SUN','MON','TUE','WED','THU','FRI','SAT'];
-    var seen={};var forecasts=[];
-    foreData.list.forEach(function(item){
-      var d=new Date(item.dt*1000);
-      var day=days[d.getDay()];
-      if(!seen[day]&&forecasts.length<5){seen[day]=true;forecasts.push({d:day,icon:weatherIcon(item.weather[0].id),hi:Math.round(item.main.temp_max)});}
-    });
-
-    var ww=document.getElementById('weather-week');
-    ww.innerHTML='';
-    forecasts.forEach(function(f){
-      var el=document.createElement('div');el.className='weather-day';
-      el.innerHTML='<div class="weather-day-label">'+f.d+'</div><div class="weather-day-icon">'+f.icon+'</div><div class="weather-day-hi">'+f.hi+'°</div>';
-      ww.appendChild(el);
-    });
-  }catch(e){console.log('Weather error:',e);}
-}
-
-function weatherIcon(id){
-  if(id>=200&&id<300)return '⛈️';
-  if(id>=300&&id<400)return '🌦️';
-  if(id>=500&&id<600)return '🌧️';
-  if(id>=600&&id<700)return '❄️';
-  if(id>=700&&id<800)return '🌫️';
-  if(id===800)return '☀️';
-  if(id===801)return '🌤️';
-  if(id<=804)return '☁️';
-  return '🌡️';
-}
-fetchWeather();
-
-
-// ---- DYNAMIC PUNCHLIST DATE ----
-(function(){
-  var now=new Date();
-  var days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  var months=["January","February","March","April","May","June","July","August","September","October","November","December"];
-  var label=days[now.getDay()]+" "+months[now.getMonth()]+" "+now.getDate();
-  var el=document.getElementById("pl-date-label");
-  if(el)el.textContent="Today's Punchlist — "+label;
-})();
 
 // ---- WEATHER ----
 var ww=document.getElementById('weather-week');
@@ -711,9 +623,8 @@ var PL_AGENDA=[
   {id:'a13',time:'5:30 PM',    text:'Sydnie\'s softball game 🥎',sub:''},
 ];
 var PL_TOTAL=PL_PRIORITIES.length+PL_AGENDA.length;
-function plKey(){var d=new Date();return 'pl-'+d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
-function plLoadDone(){try{return JSON.parse(localStorage.getItem(plKey())||'{}');}catch(e){return{};}}
-function plSaveDone(d){try{localStorage.setItem(plKey(),JSON.stringify(d));}catch(e){}}
+function plLoadDone(){try{return JSON.parse(localStorage.getItem('pl-apr29')||'{}');}catch(e){return{};}}
+function plSaveDone(d){try{localStorage.setItem('pl-apr29',JSON.stringify(d));}catch(e){}}
 function plUpdateProgress(){
   var done=plLoadDone();
   var count=Object.values(done).filter(Boolean).length;
@@ -746,7 +657,8 @@ function plRenderAgenda(){
     var div=document.createElement('div');
     div.className='pl-item'+(done[a.id]?' done':'');
     div.id='plitem-'+a.id;
-    div.innerHTML='<div class="pl-check"></div><span class="pl-time">'+a.time+'</span>'
+    var timeClass=a.time==='all day'?'pl-time allday':'pl-time';
+    div.innerHTML='<div class="pl-check"></div><span class="'+timeClass+'">'+a.time+'</span>'
       +'<div style="flex:1"><div class="pl-text">'+a.text+'</div>'+(a.sub?'<div class="pl-sub">'+a.sub+'</div>':'')+'</div>';
     div.onclick=function(){plToggle(a.id);};
     list.appendChild(div);
@@ -760,87 +672,6 @@ function plResetAll(){
 }
 plRenderPriorities();plRenderAgenda();plUpdateProgress();
 
-// ---- HEALTH ZONE ----
-var HZ_EXERCISES=[
-  {name:'Meditate',target:'20 min',val:20},
-  {name:'Push ups',target:'33 reps',val:33},
-  {name:'Squats',target:'33 reps',val:33},
-  {name:'Leg lifts',target:'33 reps',val:33},
-  {name:'Sit ups',target:'33 reps',val:33},
-  {name:'Pull ups',target:'5 reps',val:5},
-  {name:'Cardio',target:'100 cal',val:100},
-];
-var HZ_SETS=6;
-var hzState=HZ_EXERCISES.map(function(){return new Array(HZ_SETS).fill(false);});
-
-function hzBuild(){
-  var tbody=document.getElementById('hz-body');
-  if(!tbody)return;
-  tbody.innerHTML='';
-  var grand=0;
-  HZ_EXERCISES.forEach(function(ex,ei){
-    var tr=document.createElement('tr');
-    var rowTotal=0;
-    hzState[ei].forEach(function(on){if(on)rowTotal+=ex.val;});
-    grand+=rowTotal;
-    var td0=document.createElement('td');
-    td0.innerHTML='<div class="hz-ex-name">'+ex.name+'</div><div class="hz-ex-target">'+ex.target+'/set</div>';
-    tr.appendChild(td0);
-    for(var si=0;si<HZ_SETS;si++){
-      var td=document.createElement('td');
-      var box=document.createElement('div');
-      box.className='hz-set-box'+(hzState[ei][si]?' on':'');
-      box.textContent=hzState[ei][si]?'✓':'';
-      (function(eix,six){
-        box.onclick=function(){
-          hzState[eix][six]=!hzState[eix][six];
-          var sets=hzState[eix].filter(Boolean).length;
-          var tot=sets*HZ_EXERCISES[eix].val;
-          saveHealthStat(HZ_EXERCISES[eix].name,sets,tot);
-          hzBuild();
-        };
-      })(ei,si);
-      td.appendChild(box);tr.appendChild(td);
-    }
-    var tdT=document.createElement('td');
-    tdT.className='hz-total';
-    tdT.textContent=rowTotal||'';
-    tr.appendChild(tdT);
-    tbody.appendChild(tr);
-  });
-  var g=document.getElementById('hz-grand');
-  if(g)g.textContent=grand||'0';
-}
-// Load saved health zone state for today
-HZ_EXERCISES.forEach(function(ex,ei){
-  var saved=loadHealthStat(ex.name);
-  if(saved){
-    var sets=saved.sets;
-    for(var si=0;si<sets&&si<HZ_SETS;si++){hzState[ei][si]=true;}
-  }
-});
-hzBuild();
-
-// Week Ahead
-async function loadWeekAhead(){
-  var el=document.getElementById('week-ahead-list');
-  if(!el)return;
-  var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var now=new Date();
-  var items='';
-  for(var i=1;i<=5;i++){
-    var d=new Date(now);d.setDate(now.getDate()+i);
-    var label=days[d.getDay()]+' '+months[d.getMonth()]+' '+d.getDate();
-    items+='<div style="padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);display:flex;gap:10px;">';
-    items+='<span style="font-size:9px;letter-spacing:0.1em;color:var(--gold);min-width:70px;padding-top:2px;">'+label+'</span>';
-    items+='<span style="font-size:11px;color:var(--muted);">—</span></div>';
-  }
-  el.innerHTML=items;
-}
-loadWeekAhead();
-
-
 // ---- CONSTRUCTION ----
 var CONSTRUCTION=[
   {id:'c1',name:'14 Rowell Ave',type:'Renovation',desc:'Active renovation job.',featured:true},
@@ -849,7 +680,6 @@ var CONSTRUCTION=[
   {id:'c4',name:"Marie's House",type:'Renovation',desc:'Renovation project.'},
   {id:'c5',name:"Danny's Fixes",type:'Repairs',desc:'Repair and fix-it work.'},
   {id:'c6',name:"Haig's Walls",type:'Construction',desc:'Wall construction project.'},
-  {id:'c7',name:"Steve's Door",type:'Construction',desc:'Door job for Steve.'},
 ];
 function buildConGrid(){
   var conGrid=document.getElementById('con-grid');
