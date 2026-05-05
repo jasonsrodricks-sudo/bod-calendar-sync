@@ -28,7 +28,8 @@ def get_events_for_day(service, date):
     end = date.replace(hour=23, minute=59, second=59, microsecond=0).isoformat()
     events = service.events().list(
         calendarId='primary', timeMin=start, timeMax=end,
-        singleEvents=True, orderBy='startTime'
+        singleEvents=True, orderBy='startTime',
+        timeZone='America/New_York'
     ).execute()
     return events.get('items', [])
 
@@ -62,12 +63,13 @@ def is_priority(event):
     return any(t in title for t in PRIORITY_TRIGGERS)
 
 def format_time(dt_str):
+    """Parse time from calendar — already in Eastern time since we requested timeZone=America/New_York"""
     try:
-        dt = datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
-        local_dt = dt.astimezone()
-        hour = local_dt.hour % 12 or 12
-        minute = local_dt.strftime('%M')
-        ampm = 'AM' if local_dt.hour < 12 else 'PM'
+        # dt_str comes back like 2026-05-05T09:30:00-04:00
+        dt = datetime.fromisoformat(dt_str)
+        hour = dt.hour % 12 or 12
+        minute = dt.strftime('%M')
+        ampm = 'AM' if dt.hour < 12 else 'PM'
         return f'{hour}:{minute} {ampm}'
     except:
         return dt_str
@@ -79,7 +81,7 @@ def build_dashboard(events, carryover=[]):
     timed = [e for e in events if e.get('start', {}).get('dateTime')]
     allday = [e for e in events if e.get('start', {}).get('date') and not e.get('start', {}).get('dateTime')]
 
-    # Build priorities — trigger word events first, then fill remaining slots
+    # Priorities — trigger words first, then fill
     priorities = [e for e in timed if is_priority(e)]
     non_priority_timed = [e for e in timed if not is_priority(e)]
     while len(priorities) < 3 and non_priority_timed:
@@ -90,14 +92,13 @@ def build_dashboard(events, carryover=[]):
     p_items = []
     for i, e in enumerate(priorities):
         title = e.get('summary', '').replace("'", "\\'")
-        clean = title
         for phrase in ['top priority', '— top priority', 'top priority —']:
-            clean = clean.replace(phrase, '').strip()
+            title = title.replace(phrase, '').strip()
         time_str = format_time(e.get('start', {}).get('dateTime', '')) if e.get('start', {}).get('dateTime') else ''
-        p_items.append("  {id:'p" + str(i+1) + "',text:'" + clean + "',time:'" + time_str + "'}")
+        p_items.append("  {id:'p" + str(i+1) + "',text:'" + title + "',time:'" + time_str + "'}")
     pl_priorities = 'var PL_PRIORITIES=[\n' + ',\n'.join(p_items) + '\n];'
 
-    # Agenda — timed events NOT in priorities, then all-day, then carryover
+    # Agenda — timed only, not in priorities
     a_items = []
     idx = 1
     for e in timed:
