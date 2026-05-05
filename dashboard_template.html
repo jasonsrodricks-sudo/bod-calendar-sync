@@ -608,6 +608,7 @@ var HZ_EXERCISES=[
   {name:'Sit ups',target:'33 reps',val:33},
   {name:'Pull ups',target:'5 reps',val:5},
   {name:'Cardio',target:'100 cal',val:100},
+  {name:'Physical Therapy',target:'1x daily',val:11,sets:1},
 ];
 var HZ_SETS=6;
 var hzState=HZ_EXERCISES.map(function(){return new Array(HZ_SETS).fill(false);});
@@ -666,18 +667,25 @@ function hzBuild(){
     var td0=document.createElement('td');
     td0.innerHTML='<div class="hz-ex-name">'+ex.name+'</div><div class="hz-ex-target">'+ex.target+'/set</div>';
     tr.appendChild(td0);
+    var numSets=ex.sets||HZ_SETS;
     for(var si=0;si<HZ_SETS;si++){
       var td=document.createElement('td');
-      var box=document.createElement('div');
-      box.className='hz-set-box'+(hzState[ei][si]?' on':'');
-      box.textContent=hzState[ei][si]?'✓':'';
-      (function(eix,six){
-        box.onclick=function(){
-          hzState[eix][six]=!hzState[eix][six];
-          hzSave();hzBuild();
-        };
-      })(ei,si);
-      td.appendChild(box);tr.appendChild(td);
+      if(si<numSets){
+        var box=document.createElement('div');
+        box.className='hz-set-box'+(hzState[ei][si]?' on':'');
+        box.textContent=hzState[ei][si]?'✓':'';
+        (function(eix,six){
+          box.onclick=function(){
+            hzState[eix][six]=!hzState[eix][six];
+            hzSave();hzBuild();
+          };
+        })(ei,si);
+        td.appendChild(box);
+      } else {
+        td.style.cssText='opacity:0.1;';
+        td.innerHTML='<div style="width:22px;height:22px;border-radius:3px;border:1.5px solid rgba(255,255,255,0.1);margin:0 auto;"></div>';
+      }
+      tr.appendChild(td);
     }
     var tdT=document.createElement('td');
     tdT.className='hz-total';tdT.textContent=rowTotal||'';
@@ -835,19 +843,37 @@ var PL_AGENDA=[
   {id:'a13',time:'5:30 PM',    text:'Sydnie\'s softball game 🥎',sub:''},
 ];
 var PL_TOTAL=PL_PRIORITIES.length+PL_AGENDA.length;
-function plLoadDone(){try{return JSON.parse(localStorage.getItem('pl-apr29')||'{}');}catch(e){return{};}}
-function plSaveDone(d){try{localStorage.setItem('pl-apr29',JSON.stringify(d));}catch(e){}}
+function plKey(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+var plDoneCache={};
+var plCacheLoaded=false;
+async function plEnsureLoaded(){
+  if(plCacheLoaded)return;
+  var today=plKey();
+  try{
+    var rows=await sbGet('daily_checklist','date=eq.'+today);
+    if(Array.isArray(rows)&&rows.length>0){rows.forEach(function(r){plDoneCache[r.item_id]=r.checked;});plCacheLoaded=true;return;}
+  }catch(e){}
+  try{var local=localStorage.getItem('pl-'+today);if(local){plDoneCache=JSON.parse(local);plCacheLoaded=true;return;}}catch(e){}
+  plCacheLoaded=true;
+}
+function plLoadDone(){return plDoneCache;}
+async function plSaveDone(itemId,checked){
+  var today=plKey();
+  plDoneCache[itemId]=checked;
+  try{localStorage.setItem('pl-'+today,JSON.stringify(plDoneCache));}catch(e){}
+  await sbUpsert('daily_checklist',{date:today,item_id:itemId,checked:checked});
+}
 function plUpdateProgress(){
-  var done=plLoadDone();
-  var count=Object.values(done).filter(Boolean).length;
+  var count=Object.values(plDoneCache).filter(Boolean).length;
   var pct=Math.round((count/PL_TOTAL)*100);
   document.getElementById('pl-fill').style.width=pct+'%';
   document.getElementById('pl-count').textContent=pct+'%';
 }
 function plToggle(id){
-  var done=plLoadDone();done[id]=!done[id];plSaveDone(done);
+  var checked=!plDoneCache[id];
+  plSaveDone(id,checked);
   var el=document.getElementById('plitem-'+id);
-  if(el)el.classList.toggle('done',!!done[id]);
+  if(el)el.classList.toggle('done',checked);
   plUpdateProgress();
 }
 function plRenderPriorities(){
@@ -918,7 +944,12 @@ function plResetAll(){
   document.querySelectorAll('.pl-item').forEach(function(el){el.classList.remove('done');});
   plUpdateProgress();
 }
-plRenderPriorities();plRenderAgenda();plUpdateProgress();
+(async function(){
+  await plEnsureLoaded();
+  plRenderPriorities();
+  plRenderAgenda();
+  plUpdateProgress();
+})();
 
 // ---- CONSTRUCTION ----
 var CONSTRUCTION=[
