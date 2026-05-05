@@ -460,29 +460,9 @@ footer strong{color:var(--gold);}
 
 <script>
 // ═══════════════════════════════════════
-// SUPABASE
+// STORAGE — localStorage (reliable, cross-session)
+// Cross-device sync handled by sync.py each morning
 // ═══════════════════════════════════════
-var SB_URL='https://vtmzpjkjabuuyhsahhol.supabase.co';
-var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0bXpwamtqYWJ1dXloc2FoaG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MTE4OTMsImV4cCI6MjA5MzE4Nzg5M30.EokwncNDVHsinnAqoHKNI9S0DW79t2N0hWpQhmMFlNQ';
-
-async function sbUpsert(table,data){
-  try{
-    await fetch(SB_URL+'/rest/v1/'+table,{
-      method:'POST',
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify(data)
-    });
-  }catch(e){console.log('SB upsert error',e);}
-}
-
-async function sbGet(table,filter){
-  try{
-    var r=await fetch(SB_URL+'/rest/v1/'+table+'?'+filter,{
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
-    });
-    return await r.json();
-  }catch(e){console.log('SB get error',e);return[];}
-}
 
 // ═══════════════════════════════════════
 // UTILS
@@ -640,31 +620,24 @@ var PL_TOTAL=PL_PRIORITIES.length+PL_AGENDA.length;
 var plCache={};
 var plReady=false;
 
-async function plInit(){
+function plInit(){
   var today=todayStr();
   try{
-    var rows=await sbGet('daily_checklist','date=eq.'+today);
-    if(Array.isArray(rows)){rows.forEach(function(r){plCache[r.item_id]=r.checked;});}
-  }catch(e){}
-  // also merge localStorage
-  try{
     var local=JSON.parse(localStorage.getItem('pl-'+today)||'{}');
-    Object.keys(local).forEach(function(k){if(!(k in plCache))plCache[k]=local[k];});
+    Object.keys(local).forEach(function(k){plCache[k]=local[k];});
   }catch(e){}
   plReady=true;
   plRender();
   plUpdateProgress();
 }
 
-async function plToggle(id){
+function plToggle(id){
   plCache[id]=!plCache[id];
   var el=document.getElementById('plitem-'+id);
   if(el)el.classList.toggle('done',!!plCache[id]);
   plUpdateProgress();
-  // save to both
   var today=todayStr();
   try{localStorage.setItem('pl-'+today,JSON.stringify(plCache));}catch(e){}
-  await sbUpsert('daily_checklist',{date:today,item_id:id,checked:!!plCache[id]});
 }
 
 function plUpdateProgress(){
@@ -760,47 +733,33 @@ var HZ_EXERCISES=[
 var HZ_SETS=6;
 var hzState=HZ_EXERCISES.map(function(ex){return new Array(HZ_SETS).fill(false);});
 
-async function hzSave(){
+function hzSave(){
   var key=todayStr();
-  var payload={date:key,state:JSON.stringify(hzState)};
   try{localStorage.setItem('hz-'+key,JSON.stringify(hzState));}catch(e){}
-  await sbUpsert('health_stats',payload);
 }
 
-async function hzLoad(){
+function hzLoad(){
   var key=todayStr();
-  // Try Supabase first
-  try{
-    var rows=await sbGet('health_stats','date=eq.'+key+'&select=state');
-    if(Array.isArray(rows)&&rows.length>0&&rows[0].state){
-      hzState=JSON.parse(rows[0].state);
-      // pad if exercises were added
-      while(hzState.length<HZ_EXERCISES.length)hzState.push(new Array(HZ_SETS).fill(false));
-      hzBuild();return;
-    }
-  }catch(e){}
-  // Fall back to localStorage
   try{
     var local=localStorage.getItem('hz-'+key);
     if(local){
       hzState=JSON.parse(local);
       while(hzState.length<HZ_EXERCISES.length)hzState.push(new Array(HZ_SETS).fill(false));
-      hzBuild();return;
     }
   }catch(e){}
   hzBuild();
 }
 
-async function hzLoadStreak(){
+function hzLoadStreak(){
   var streak=0;
   var d=new Date();
   for(var i=0;i<90;i++){
     var dd=new Date(d);dd.setDate(d.getDate()-i);
     var key=dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0')+'-'+String(dd.getDate()).padStart(2,'0');
     try{
-      var rows=await sbGet('health_stats','date=eq.'+key+'&select=state');
-      if(Array.isArray(rows)&&rows.length>0&&rows[0].state){
-        var s=JSON.parse(rows[0].state);
+      var local=localStorage.getItem('hz-'+key);
+      if(local){
+        var s=JSON.parse(local);
         var total=0;
         HZ_EXERCISES.forEach(function(ex,ei){if(s[ei])s[ei].forEach(function(on){if(on)total+=ex.val;});});
         if(total>0){streak++;}else{break;}
@@ -988,15 +947,9 @@ var CONSTRUCTION=[
   {id:'c7',name:"Steve's Door",type:'Construction',desc:'Door job for Steve.'},
 ];
 
-async function buildConGrid(){
+function buildConGrid(){
   var conGrid=document.getElementById('con-grid');conGrid.innerHTML='';
-  // Load completed from Supabase first, fall back to localStorage
-  var completed=[];
-  try{
-    var rows=await sbGet('projects','type=eq.construction_completed&select=job_id');
-    if(Array.isArray(rows)&&rows.length>0){completed=rows.map(function(r){return r.job_id;});}
-    else{completed=load('con-completed',[]);}
-  }catch(e){completed=load('con-completed',[]);}
+  var completed=load('con-completed',[]);
 
   var active=CONSTRUCTION.filter(function(j){return completed.indexOf(j.id)===-1;});
   active.forEach(function(j,idx){
