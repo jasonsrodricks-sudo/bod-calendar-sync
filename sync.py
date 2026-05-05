@@ -24,8 +24,9 @@ def get_calendar_service():
     return build('calendar', 'v3', credentials=creds)
 
 def get_events_for_day(service, date):
-    start = date.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
-    end = date.replace(hour=23, minute=59, second=59, microsecond=0).isoformat()
+    # Use Eastern time boundaries explicitly
+    start = date.strftime('%Y-%m-%dT00:00:00-04:00')
+    end = date.strftime('%Y-%m-%dT23:59:59-04:00')
     events = service.events().list(
         calendarId='primary', timeMin=start, timeMax=end,
         singleEvents=True, orderBy='startTime',
@@ -63,15 +64,20 @@ def is_priority(event):
     return any(t in title for t in PRIORITY_TRIGGERS)
 
 def format_time(dt_str):
-    """Parse time from calendar — already in Eastern time since we requested timeZone=America/New_York"""
+    """
+    Google Calendar returns Eastern time when timeZone=America/New_York is set.
+    e.g. 2026-05-05T09:30:00-04:00
+    Strip the offset, parse the local portion directly — no conversion needed.
+    """
     try:
-        # dt_str comes back like 2026-05-05T09:30:00-04:00
-        dt = datetime.fromisoformat(dt_str)
+        local = dt_str[:19]  # '2026-05-05T09:30:00'
+        dt = datetime.strptime(local, '%Y-%m-%dT%H:%M:%S')
         hour = dt.hour % 12 or 12
         minute = dt.strftime('%M')
         ampm = 'AM' if dt.hour < 12 else 'PM'
         return f'{hour}:{minute} {ampm}'
-    except:
+    except Exception as e:
+        print(f'Time parse error: {e} for {dt_str}')
         return dt_str
 
 def build_dashboard(events, carryover=[]):
@@ -81,11 +87,16 @@ def build_dashboard(events, carryover=[]):
     timed = [e for e in events if e.get('start', {}).get('dateTime')]
     allday = [e for e in events if e.get('start', {}).get('date') and not e.get('start', {}).get('dateTime')]
 
-    # Priorities — trigger words first, then fill
+    # Debug first few times
+    for e in timed[:3]:
+        raw = e.get('start', {}).get('dateTime', '')
+        print(f"  {e.get('summary')} → raw: {raw} → formatted: {format_time(raw)}")
+
+    # Priorities — trigger words first, then fill to 3-5
     priorities = [e for e in timed if is_priority(e)]
-    non_priority_timed = [e for e in timed if not is_priority(e)]
-    while len(priorities) < 3 and non_priority_timed:
-        priorities.append(non_priority_timed.pop(0))
+    non_priority = [e for e in timed if not is_priority(e)]
+    while len(priorities) < 3 and non_priority:
+        priorities.append(non_priority.pop(0))
     priorities = priorities[:5]
     priority_titles = {e.get('summary', '').lower() for e in priorities}
 
@@ -98,7 +109,7 @@ def build_dashboard(events, carryover=[]):
         p_items.append("  {id:'p" + str(i+1) + "',text:'" + title + "',time:'" + time_str + "'}")
     pl_priorities = 'var PL_PRIORITIES=[\n' + ',\n'.join(p_items) + '\n];'
 
-    # Agenda — timed only, not in priorities
+    # Agenda — timed only, skip priorities; then all-day; then carryover
     a_items = []
     idx = 1
     for e in timed:
@@ -107,12 +118,10 @@ def build_dashboard(events, carryover=[]):
             time_str = format_time(e.get('start', {}).get('dateTime', ''))
             a_items.append("  {id:'a" + str(idx) + "', time:'" + time_str + "', text:'" + title + "', sub:''}")
             idx += 1
-
     for e in allday:
         title = e.get('summary', '').replace("'", "\\'")
         a_items.append("  {id:'a" + str(idx) + "', time:'all day', text:'" + title + "', sub:''}")
         idx += 1
-
     for e in carryover:
         title = e.get('summary', '').replace("'", "\\'")
         a_items.append("  {id:'a" + str(idx) + "', time:'carry over', text:'" + title + "', sub:'from yesterday'}")
