@@ -547,7 +547,13 @@ fetchWeather();
 // ═══════════════════════════════════════
 // WEEK AHEAD
 // ═══════════════════════════════════════
-var WEEK_AHEAD=[];
+var WEEK_AHEAD=[
+  {label:'Thu May 7',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']},
+  {label:'Fri May 8',events:['🌅 Morning Work Block','🏋️ Gym','🔨 Construction & Admin']},
+  {label:'Sat May 9',events:['Museum of science','Softball Game - Obear']},
+  {label:'Sun May 10',events:[]},
+  {label:'Mon May 11',events:['🌅 Morning Work Block','🔨 Construction & Admin','Ocean st']}
+];
 (function(){
   var el=document.getElementById('week-ahead-list');if(!el)return;
   var shortDays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -615,15 +621,25 @@ showQuote();
 // PUNCHLIST — SUPABASE SYNCED
 // ═══════════════════════════════════════
 var PL_PRIORITIES=[
-  {id:'p1',text:'Morning Work Block',time:'5:30 AM'},
-  {id:'p2',text:'BOD Build Session',time:'6:00 AM'},
-  {id:'p3',text:'Construction & Admin',time:'9:30 AM'},
+  {id:'p1',text:'Drop Syd',time:'7:30 AM'},
+  {id:'p2',text:'🏋️ Gym',time:'8:00 AM'},
+  {id:'p3',text:'Pick up Syd',time:'12:00 PM'}
 ];
 var PL_AGENDA=[
-  {id:'a1',time:'12:30 PM',text:'Kara Duffy Coaching Session',sub:''},
-  {id:'a2',time:'1:45 PM',text:'Pick up Syd',sub:''},
-  {id:'a3',time:'all day',text:'Windows',sub:''},
-  {id:'a4',time:'all day',text:'Organized tax plan',sub:''},
+  {id:'a1', time:'5:30 AM', text:'🌅 Morning Work Block', sub:''},
+  {id:'a2', time:'9:00 AM', text:'Danny’s house', sub:''},
+  {id:'a3', time:'9:30 AM', text:'🔨 Construction & Admin', sub:''},
+  {id:'a4', time:'4:00 PM', text:'Half day', sub:''},
+  {id:'a5', time:'5:30 PM', text:'Softball - Bumble Bee', sub:''},
+  {id:'a6', time:'all day', text:'Recycling', sub:''},
+  {id:'a7', time:'all day', text:'Credit card auto pay bills', sub:''},
+  {id:'a8', time:'all day', text:'1/2 Day', sub:''},
+  {id:'a9', time:'carry over', text:'Organized Haig\'s job', sub:'from yesterday'},
+  {id:'a10', time:'carry over', text:'Canyon Ranch dates', sub:'from yesterday'},
+  {id:'a11', time:'carry over', text:'Follow up with Theresa', sub:'from yesterday'},
+  {id:'a12', time:'carry over', text:'Pool opening', sub:'from yesterday'},
+  {id:'a13', time:'carry over', text:'Mood board with Connor', sub:'from yesterday'},
+  {id:'a14', time:'carry over', text:'Marie\'s fridge trim', sub:'from yesterday'}
 ];
 var PL_TOTAL=PL_PRIORITIES.length+PL_AGENDA.length;
 
