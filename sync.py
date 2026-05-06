@@ -12,7 +12,7 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
 TOKEN_JSON = os.environ.get('TOKEN_JSON')
 NETLIFY_SITE_ID = os.environ.get('NETLIFY_SITE_ID')
 NETLIFY_AUTH_TOKEN = os.environ.get('NETLIFY_AUTH_TOKEN')
-GITHUB_TOKEN = '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'
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
 GITHUB_REPO = 'jasonsrodricks-sudo/bod-calendar-sync'
 
 PRIORITY_TRIGGERS = ['meet', 'drop', 'call', 'session', 'coaching', 'pick up',
