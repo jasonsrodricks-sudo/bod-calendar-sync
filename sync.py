@@ -187,9 +187,6 @@ def push_to_github(html_content, filename='index.html'):
         print('Success — Netlify will auto-deploy with functions intact')
     else:
         print(f'GitHub push failed: {result.text[:200]}')
-        # Fallback to direct Netlify deploy
-        print('Falling back to direct Netlify deploy...')
-        deploy_direct(html_content)
 
 def deploy_direct(html_content):
     encoded = html_content.encode('utf-8')
