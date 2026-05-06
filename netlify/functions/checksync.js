@@ -1,7 +1,7 @@
-const SUPABASE_URL = 'https://vtmzpjkjabuuyhsahhol.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0bXpwamtqYWJ1dXloc2FoaG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MTE4OTMsImV4cCI6MjA5MzE4Nzg5M30.EokwncNDVHsinnAqoHKNI9S0DW79t2N0hWpQhmMFlNQ';
-
 exports.handler = async (event) => {
+  const SUPABASE_URL = 'https://vtmzpjkjabuuyhsahhol.supabase.co';
+  const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -13,6 +13,10 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: '' };
   }
 
+  if (!SUPABASE_KEY) {
+    return { statusCode: 500, headers, body: JSON.stringify({error: 'Missing SUPABASE_KEY env var'}) };
+  }
+
   const sbHeaders = {
     'apikey': SUPABASE_KEY,
     'Authorization': `Bearer ${SUPABASE_KEY}`,
@@ -22,17 +26,14 @@ exports.handler = async (event) => {
 
   try {
     if (event.httpMethod === 'GET') {
-      // Load checkbox state for a date
       const date = event.queryStringParameters?.date;
       if (!date) return { statusCode: 400, headers, body: JSON.stringify({error:'date required'}) };
-
       const res = await fetch(`${SUPABASE_URL}/rest/v1/daily_checklist?date=eq.${date}`, { headers: sbHeaders });
       const data = await res.json();
       return { statusCode: 200, headers, body: JSON.stringify(data) };
     }
 
     if (event.httpMethod === 'POST') {
-      // Save checkbox state
       const body = JSON.parse(event.body || '{}');
       const res = await fetch(`${SUPABASE_URL}/rest/v1/daily_checklist`, {
         method: 'POST',
