@@ -14,7 +14,6 @@ NETLIFY_SITE_ID = os.environ.get('NETLIFY_SITE_ID')
 NETLIFY_AUTH_TOKEN = os.environ.get('NETLIFY_AUTH_TOKEN')
 GITHUB_TOKEN = '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'
 GITHUB_REPO = 'jasonsrodricks-sudo/bod-calendar-sync'
-GITHUB_FILE = 'index.html'
 
 PRIORITY_TRIGGERS = ['meet', 'drop', 'call', 'session', 'coaching', 'pick up',
                      'deliver', 'ship', 'pay', 'appointment', 'top priority',
@@ -91,11 +90,9 @@ def format_time(dt_str):
         return dt_str
 
 def build_dashboard(events, carryover=[], week_ahead=[]):
-    # Read template from GitHub
-    headers = {'Authorization': f'token {GITHUB_TOKEN}', 'Accept': 'application/vnd.github.v3+json'}
-    res = requests.get(f'https://api.github.com/repos/{GITHUB_REPO}/contents/dashboard_template.html', headers=headers)
-    file_data = res.json()
-    html = base64.b64decode(file_data['content']).decode('utf-8')
+    # Read template from local file (Render clones the GitHub repo)
+    with open('dashboard_template.html', 'r') as f:
+        html = f.read()
 
     timed = [e for e in events if e.get('start', {}).get('dateTime') and not is_excluded(e)]
     allday = [e for e in events if e.get('start', {}).get('date')
@@ -159,42 +156,42 @@ def build_dashboard(events, carryover=[], week_ahead=[]):
 
     return html
 
-def push_to_github(html_content):
-    """Push updated HTML as index.html to GitHub — Netlify auto-deploys and serves functions"""
+def push_to_github(html_content, filename='index.html'):
+    """Push HTML to GitHub as index.html — Netlify auto-deploys with functions"""
     headers = {
         'Authorization': f'token {GITHUB_TOKEN}',
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json'
     }
-    # Get current SHA of index.html
-    res = requests.get(f'https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE}', headers=headers)
-    sha = None
-    if res.status_code == 200:
-        sha = res.json().get('sha')
+    # Get current SHA
+    res = requests.get(
+        f'https://api.github.com/repos/{GITHUB_REPO}/contents/{filename}',
+        headers=headers
+    )
+    sha = res.json().get('sha') if res.status_code == 200 else None
 
     content_b64 = base64.b64encode(html_content.encode('utf-8')).decode('utf-8')
     payload = {
-        'message': f'Daily dashboard update {datetime.now().strftime("%Y-%m-%d")}',
+        'message': f'Daily update {datetime.now().strftime("%Y-%m-%d")}',
         'content': content_b64,
     }
     if sha:
         payload['sha'] = sha
 
     result = requests.put(
-        f'https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE}',
-        headers=headers,
-        json=payload
+        f'https://api.github.com/repos/{GITHUB_REPO}/contents/{filename}',
+        headers=headers, json=payload
     )
-    print(f'GitHub push: {result.status_code}')
+    print(f'GitHub push status: {result.status_code}')
     if result.status_code in [200, 201]:
-        print('Pushed to GitHub — Netlify will auto-deploy with functions')
+        print('Success — Netlify will auto-deploy with functions intact')
     else:
-        print(f'GitHub error: {result.text}')
+        print(f'GitHub push failed: {result.text[:200]}')
         # Fallback to direct Netlify deploy
-        deploy_to_netlify_direct(html_content)
+        print('Falling back to direct Netlify deploy...')
+        deploy_direct(html_content)
 
-def deploy_to_netlify_direct(html_content):
-    """Fallback direct Netlify deploy"""
+def deploy_direct(html_content):
     encoded = html_content.encode('utf-8')
     sha1 = hashlib.sha1(encoded).hexdigest()
     headers = {'Authorization': f'Bearer {NETLIFY_AUTH_TOKEN}', 'Content-Type': 'application/json'}
@@ -207,7 +204,7 @@ def deploy_to_netlify_direct(html_content):
             f'https://api.netlify.com/api/v1/deploys/{deploy_id}/files/index.html',
             headers={'Authorization': f'Bearer {NETLIFY_AUTH_TOKEN}', 'Content-Type': 'text/html; charset=UTF-8'},
             data=encoded)
-    print(f'Fallback Netlify deploy: {deploy_id}')
+    print(f'Direct deploy ID: {deploy_id}')
 
 if __name__ == '__main__':
     service = get_calendar_service()
