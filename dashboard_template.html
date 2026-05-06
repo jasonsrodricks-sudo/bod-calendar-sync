@@ -547,16 +547,26 @@ fetchWeather();
 // ═══════════════════════════════════════
 // WEEK AHEAD
 // ═══════════════════════════════════════
+var WEEK_AHEAD=[];
 (function(){
   var el=document.getElementById('week-ahead-list');if(!el)return;
   var shortDays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var shortMonths=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var now=new Date();var html='';
-  for(var i=1;i<=5;i++){
-    var d=new Date(now);d.setDate(now.getDate()+i);
-    html+='<div class="week-row"><span class="week-day">'+shortDays[d.getDay()]+' '+shortMonths[d.getMonth()]+' '+d.getDate()+'</span><span style="font-size:12px;color:var(--muted);">—</span></div>';
+  var now=new Date();var out='';
+  if(WEEK_AHEAD&&WEEK_AHEAD.length>0){
+    WEEK_AHEAD.forEach(function(day){
+      var eventsHtml=day.events&&day.events.length>0
+        ?'<span style="font-size:12px;color:var(--muted);">'+day.events.join(', ')+'</span>'
+        :'<span style="font-size:12px;color:var(--muted);opacity:0.4;">—</span>';
+      out+='<div class="week-row"><span class="week-day">'+day.label+'</span>'+eventsHtml+'</div>';
+    });
+  }else{
+    for(var i=1;i<=5;i++){
+      var d=new Date(now);d.setDate(now.getDate()+i);
+      out+='<div class="week-row"><span class="week-day">'+shortDays[d.getDay()]+' '+shortMonths[d.getMonth()]+' '+d.getDate()+'</span><span style="font-size:12px;color:var(--muted);opacity:0.4;">—</span></div>';
+    }
   }
-  el.innerHTML=html;
+  document.getElementById('week-ahead-list').innerHTML=out;
 })();
 
 // ═══════════════════════════════════════
@@ -620,24 +630,40 @@ var PL_TOTAL=PL_PRIORITIES.length+PL_AGENDA.length;
 var plCache={};
 var plReady=false;
 
-function plInit(){
+async function plInit(){
   var today=todayStr();
+  // Try proxy first for cross-device sync
+  try{
+    var res=await fetch('/.netlify/functions/checksync?date='+today);
+    var rows=await res.json();
+    if(Array.isArray(rows)){rows.forEach(function(r){plCache[r.item_id]=r.checked;});}
+  }catch(e){}
+  // Merge localStorage on top (catches any local changes not yet synced)
   try{
     var local=JSON.parse(localStorage.getItem('pl-'+today)||'{}');
-    Object.keys(local).forEach(function(k){plCache[k]=local[k];});
+    Object.keys(local).forEach(function(k){if(!(k in plCache))plCache[k]=local[k];});
   }catch(e){}
   plReady=true;
   plRender();
   plUpdateProgress();
 }
 
-function plToggle(id){
+async function plToggle(id){
   plCache[id]=!plCache[id];
   var el=document.getElementById('plitem-'+id);
   if(el)el.classList.toggle('done',!!plCache[id]);
   plUpdateProgress();
   var today=todayStr();
+  // Save to localStorage immediately (instant feedback)
   try{localStorage.setItem('pl-'+today,JSON.stringify(plCache));}catch(e){}
+  // Save to Supabase via proxy (cross-device sync)
+  try{
+    await fetch('/.netlify/functions/checksync',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date:today,item_id:id,checked:!!plCache[id]})
+    });
+  }catch(e){}
 }
 
 function plUpdateProgress(){
