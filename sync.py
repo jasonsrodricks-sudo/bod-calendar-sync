@@ -90,9 +90,23 @@ def format_time(dt_str):
         return dt_str
 
 def build_dashboard(events, carryover=[], week_ahead=[]):
-    # Read template from local file (Render clones the GitHub repo)
-    with open('dashboard_template.html', 'r') as f:
-        html = f.read()
+    # Download dashboard_template.html fresh from GitHub on every run
+    headers = {
+        'Authorization': f'token {GITHUB_TOKEN}',
+        'Accept': 'application/vnd.github.v3.raw'
+    }
+    res = requests.get(
+        f'https://api.github.com/repos/{GITHUB_REPO}/contents/dashboard_template.html',
+        headers=headers
+    )
+    if res.status_code == 200:
+        html = res.text
+        print('Template downloaded fresh from GitHub')
+    else:
+        # Fallback to local file
+        print(f'GitHub download failed ({res.status_code}), using local file')
+        with open('dashboard_template.html', 'r') as f:
+            html = f.read()
 
     timed = [e for e in events if e.get('start', {}).get('dateTime') and not is_excluded(e)]
     allday = [e for e in events if e.get('start', {}).get('date')
