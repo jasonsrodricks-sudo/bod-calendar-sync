@@ -212,6 +212,19 @@ body{background:var(--cream);color:var(--black);font-family:'DM Mono',monospace;
 .add-btn:hover{background:rgba(201,168,76,0.08);}
 .proj-notes,.con-notes{width:100%;background:transparent;border:none;outline:none;font-family:'DM Mono',monospace;font-size:12px;color:var(--black);line-height:1.9;resize:none;min-height:120px;margin-top:4px;}
 .proj-notes::placeholder,.con-notes::placeholder{color:var(--muted);opacity:0.5;}
+/* PUNCH LIST ON BLUE CARDS */
+.proj-punch-list{list-style:none;margin-top:6px;}
+.proj-punch-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.06);cursor:pointer;user-select:none;}
+.proj-punch-item:last-child{border-bottom:none;}
+.proj-punch-item.done{opacity:0.4;}
+.proj-punch-item.done .proj-punch-text{text-decoration:line-through;color:var(--muted);}
+.proj-punch-check{width:16px;height:16px;border-radius:3px;border:2px solid rgba(0,0,0,0.15);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.proj-punch-item.done .proj-punch-check{background:var(--green);border-color:var(--green);}
+.proj-punch-check::after{content:'✓';font-size:9px;color:#fff;opacity:0;transition:opacity 0.2s;}
+.proj-punch-item.done .proj-punch-check::after{opacity:1;}
+.proj-punch-text{font-size:12px;line-height:1.5;color:var(--black);flex:1;}
+.proj-punch-add{font-family:'DM Mono',monospace;font-size:12px;border:none;outline:none;background:transparent;width:100%;padding:8px 0;color:var(--black);}
+.proj-punch-add::placeholder{color:var(--muted);opacity:0.5;}
 .punch-list{list-style:none;margin-top:6px;}
 .punch-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,0.06);cursor:pointer;user-select:none;}
 .punch-item:last-child{border-bottom:none;}
@@ -406,6 +419,15 @@ footer strong{color:var(--gold);}
       <span class="card-type">Brain Dump</span>
       <div class="card-title">Project Notes <span class="save-indicator" id="proj-notes-saved">Saved</span></div>
       <textarea class="proj-notes" id="proj-notes-area" placeholder="Ideas, thoughts, loose threads..."></textarea>
+    </div>
+  </div>
+  <!-- PUNCH LIST -->
+  <div style="margin-top:2px;">
+    <div class="card">
+      <span class="card-type">Punch List</span>
+      <div class="card-title">To Do <span class="save-indicator" id="proj-punch-saved">Saved</span></div>
+      <ul class="proj-punch-list" id="proj-punch-list"></ul>
+      <input class="proj-punch-add" id="proj-punch-add" placeholder="+ Add item..." />
     </div>
   </div>
 </div>
@@ -935,9 +957,41 @@ function openProject(id){
     clearTimeout(notesTimer);
     notesTimer=setTimeout(function(){save('proj-notes-'+id,notesArea.value);flashSaved('proj-notes-saved');},600);
   };
+
+  // Punch list
+  var punchItems=load('proj-punch-'+id,[]);
+  var pList=document.getElementById('proj-punch-list');
+  pList.innerHTML='';
+  punchItems.forEach(function(p,i){renderProjPunchItem(pList,p,id,i);});
+  var punchAdd=document.getElementById('proj-punch-add');
+  punchAdd.value='';
+  punchAdd.onkeydown=function(e){
+    if(e.key==='Enter'){
+      var val=this.value.trim();if(!val)return;
+      var cur=load('proj-punch-'+id,[]);
+      cur.push({text:val,done:false});
+      save('proj-punch-'+id,cur);
+      flashSaved('proj-punch-saved');
+      openProject(id);
+    }
+  };
+
   document.getElementById('view-main').classList.remove('active');
   document.getElementById('view-project').classList.add('active');
   window.scrollTo(0,0);
+}
+
+function renderProjPunchItem(list,p,projId,idx){
+  var li=document.createElement('li');li.className='proj-punch-item'+(p.done?' done':'');
+  li.innerHTML='<div class="proj-punch-check"></div><span class="proj-punch-text">'+p.text+'</span>';
+  li.onclick=function(){
+    var cur=load('proj-punch-'+projId,[]);
+    cur[idx].done=!cur[idx].done;
+    save('proj-punch-'+projId,cur);
+    flashSaved('proj-punch-saved');
+    li.classList.toggle('done',cur[idx].done);
+  };
+  list.appendChild(li);
 }
 
 function renderStep(list,text,projId,idx){
