@@ -482,6 +482,32 @@ footer strong{color:var(--gold);}
 
 <script>
 // ═══════════════════════════════════════
+// SUPABASE — for project punch lists and cross-device sync
+// ═══════════════════════════════════════
+var SB_URL='https://vtmzpjkjabuuyhsahhol.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0bXpwamtqYWJ1dXloc2FoaG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MTE4OTMsImV4cCI6MjA5MzE4Nzg5M30.EokwncNDVHsinnAqoHKNI9S0DW79t2N0hWpQhmMFlNQ';
+
+async function sbUpsert(table,data){
+  try{
+    var res=await fetch(SB_URL+'/rest/v1/'+table,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify(data)
+    });
+    return await res.json();
+  }catch(e){console.log('SB upsert error',e);return null;}
+}
+
+async function sbGet(table,filter){
+  try{
+    var res=await fetch(SB_URL+'/rest/v1/'+table+'?'+filter,{
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    });
+    return await res.json();
+  }catch(e){console.log('SB get error',e);return[];}
+}
+
+// ═══════════════════════════════════════
 // STORAGE — localStorage (reliable, cross-session)
 // Cross-device sync handled by sync.py each morning
 // ═══════════════════════════════════════
@@ -654,13 +680,14 @@ var plReady=false;
 
 async function plInit(){
   var today=todayStr();
-  // Try proxy first for cross-device sync
+  // Load full state blob from Supabase
   try{
-    var res=await fetch('/.netlify/functions/checksync?date='+today);
-    var rows=await res.json();
-    if(Array.isArray(rows)){rows.forEach(function(r){plCache[r.item_id]=r.checked;});}
+    var rows=await sbGet('daily_checklist','date=eq.'+today+'&select=state');
+    if(Array.isArray(rows)&&rows.length>0&&rows[0].state){
+      plCache=JSON.parse(rows[0].state);
+    }
   }catch(e){}
-  // Merge localStorage on top (catches any local changes not yet synced)
+  // Merge localStorage on top
   try{
     var local=JSON.parse(localStorage.getItem('pl-'+today)||'{}');
     Object.keys(local).forEach(function(k){if(!(k in plCache))plCache[k]=local[k];});
@@ -676,16 +703,10 @@ async function plToggle(id){
   if(el)el.classList.toggle('done',!!plCache[id]);
   plUpdateProgress();
   var today=todayStr();
-  // Save to localStorage immediately (instant feedback)
+  // Save full state blob to localStorage immediately
   try{localStorage.setItem('pl-'+today,JSON.stringify(plCache));}catch(e){}
-  // Save to Supabase via proxy (cross-device sync)
-  try{
-    await fetch('/.netlify/functions/checksync',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({date:today,item_id:id,checked:!!plCache[id]})
-    });
-  }catch(e){}
+  // Save full state blob to Supabase — one row per day, no upsert conflicts
+  await sbUpsert('daily_checklist',{date:today,state:JSON.stringify(plCache)});
 }
 
 function plUpdateProgress(){
@@ -941,21 +962,37 @@ function openProject(id){
     notesTimer=setTimeout(function(){save('proj-notes-'+id,notesArea.value);flashSaved('proj-notes-saved');},600);
   };
 
-  // Punch list
-  var punchItems=load('proj-punch-'+id,[]);
+  // Punch list — load from Supabase
   var pList=document.getElementById('proj-punch-list');
-  pList.innerHTML='';
-  punchItems.forEach(function(p,i){renderProjPunchItem(pList,p,id,i);});
+  pList.innerHTML='<li style="font-size:11px;color:var(--muted);padding:8px 0;">Loading...</li>';
   var punchAdd=document.getElementById('proj-punch-add');
   punchAdd.value='';
+
+  // Load from Supabase
+  sbGet('project_punchlist','project_id=eq.'+id+'&order=created_at.asc').then(function(rows){
+    pList.innerHTML='';
+    if(Array.isArray(rows)&&rows.length>0){
+      rows.forEach(function(p){renderProjPunchItem(pList,p,id);});
+    }
+    // Also load any localStorage items not yet in Supabase
+    var local=load('proj-punch-'+id,[]);
+    local.forEach(function(p,i){renderProjPunchItem(pList,{id:'local-'+i,text:p.text,done:p.done},id);});
+  }).catch(function(){
+    // Fallback to localStorage
+    var punchItems=load('proj-punch-'+id,[]);
+    pList.innerHTML='';
+    punchItems.forEach(function(p,i){renderProjPunchItem(pList,{id:'local-'+i,text:p.text,done:p.done},id);});
+  });
+
   punchAdd.onkeydown=function(e){
     if(e.key==='Enter'){
       var val=this.value.trim();if(!val)return;
-      var cur=load('proj-punch-'+id,[]);
-      cur.push({text:val,done:false});
-      save('proj-punch-'+id,cur);
-      flashSaved('proj-punch-saved');
-      openProject(id);
+      punchAdd.value='';
+      // Save to Supabase
+      sbUpsert('project_punchlist',{project_id:id,text:val,done:false}).then(function(){
+        flashSaved('proj-punch-saved');
+        openProject(id);
+      });
     }
   };
 
@@ -964,15 +1001,22 @@ function openProject(id){
   window.scrollTo(0,0);
 }
 
-function renderProjPunchItem(list,p,projId,idx){
+function renderProjPunchItem(list,p,projId){
   var li=document.createElement('li');li.className='proj-punch-item'+(p.done?' done':'');
   li.innerHTML='<div class="proj-punch-check"></div><span class="proj-punch-text">'+p.text+'</span>';
   li.onclick=function(){
-    var cur=load('proj-punch-'+projId,[]);
-    cur[idx].done=!cur[idx].done;
-    save('proj-punch-'+projId,cur);
+    var newDone=!p.done;
+    p.done=newDone;
+    li.classList.toggle('done',newDone);
     flashSaved('proj-punch-saved');
-    li.classList.toggle('done',cur[idx].done);
+    if(p.id&&p.id.toString().indexOf('local-')===-1){
+      // Update in Supabase
+      fetch(SB_URL+'/rest/v1/project_punchlist?id=eq.'+p.id,{
+        method:'PATCH',
+        headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({done:newDone})
+      });
+    }
   };
   list.appendChild(li);
 }
