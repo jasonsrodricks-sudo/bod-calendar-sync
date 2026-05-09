@@ -570,11 +570,11 @@ fetchWeather();
 // WEEK AHEAD
 // ═══════════════════════════════════════
 var WEEK_AHEAD=[
-  {label:'Sat May 9',events:['Museum of science','Softball Game - Obear']},
   {label:'Sun May 10',events:[]},
   {label:'Mon May 11',events:['🌅 Morning Work Block','🔨 Construction & Admin','Ocean st']},
   {label:'Tue May 12',events:['🌅 Morning Work Block','🏋️ Gym','🔨 Construction & Admin']},
-  {label:'Wed May 13',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']}
+  {label:'Wed May 13',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']},
+  {label:'Thu May 14',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']}
 ];
 (function(){
   var el=document.getElementById('week-ahead-list');if(!el)return;
@@ -643,26 +643,17 @@ showQuote();
 // PUNCHLIST — SUPABASE SYNCED
 // ═══════════════════════════════════════
 var PL_PRIORITIES=[
-  {id:'p1',text:'🏋️ Gym',time:'8:00 AM'},
-  {id:'p2',text:'Pick up Syd and Tristan to take them to Boston Boston to hang out with Toni',time:'12:00 PM'},
-  {id:'p3',text:'🌅 Morning Work Block',time:'5:30 AM'}
+  {id:'p1',text:'Museum of science',time:'12:00 PM'},
+  {id:'p2',text:'Softball Game - Obear',time:'12:30 PM'}
 ];
 var PL_AGENDA=[
-  {id:'a1', time:'9:30 AM', text:'🔨 Construction & Admin', sub:''},
-  {id:'a2', time:'3:00 PM', text:'Tristan and Syd - Boston', sub:''},
-  {id:'a3', time:'all day', text:'Board of Directors connection LLC', sub:''},
-  {id:'a4', time:'all day', text:'Viola at School', sub:''},
-  {id:'a5', time:'carry over', text:'Print dry erase pages', sub:'from yesterday'},
-  {id:'a6', time:'carry over', text:'Lori Marie', sub:'from yesterday'},
-  {id:'a7', time:'carry over', text:'Brian\'s Ladders', sub:'from yesterday'},
-  {id:'a8', time:'carry over', text:'Call Jill - Seaport', sub:'from yesterday'},
-  {id:'a9', time:'carry over', text:'So couch', sub:'from yesterday'},
-  {id:'a10', time:'carry over', text:'Finish Wheels and get them on my truck', sub:'from yesterday'},
-  {id:'a11', time:'carry over', text:'Set up travel events — Canyon Ranch, Santi, Flights, Museum of Science', sub:'from yesterday'},
-  {id:'a12', time:'carry over', text:'Call Nutter', sub:'from yesterday'},
-  {id:'a13', time:'carry over', text:'Cleaners at 55', sub:'from yesterday'},
-  {id:'a14', time:'carry over', text:'Schedule tattoo removal appointment', sub:'from yesterday'},
-  {id:'a15', time:'carry over', text:'Follow up with Theresa', sub:'from yesterday'}
+  {id:'a1', time:'all day', text:'Lori’s fridge', sub:''},
+  {id:'a2', time:'all day', text:'Haig’s plan', sub:''},
+  {id:'a3', time:'all day', text:'1962 mortgage payment', sub:''},
+  {id:'a4', time:'all day', text:'Fix pipe', sub:''},
+  {id:'a5', time:'all day', text:'Cushions out and back from dry cleaner set up backyard', sub:''},
+  {id:'a6', time:'carry over', text:'Board of Directors connection LLC', sub:'from yesterday'},
+  {id:'a7', time:'carry over', text:'Viola at School', sub:'from yesterday'}
 ];
 var PL_TOTAL=PL_PRIORITIES.length+PL_AGENDA.length;
 
