@@ -90,7 +90,7 @@ def format_time(dt_str):
         return dt_str
 
 def build_dashboard(events, carryover=[], week_ahead=[]):
-    # Download dashboard_template.html fresh from GitHub on every run
+    # Download fresh template from GitHub
     headers = {
         'Authorization': f'token {GITHUB_TOKEN}',
         'Accept': 'application/vnd.github.v3.raw'
@@ -103,7 +103,6 @@ def build_dashboard(events, carryover=[], week_ahead=[]):
         html = res.text
         print('Template downloaded fresh from GitHub')
     else:
-        # Fallback to local file
         print(f'GitHub download failed ({res.status_code}), using local file')
         with open('dashboard_template.html', 'r') as f:
             html = f.read()
@@ -170,52 +169,24 @@ def build_dashboard(events, carryover=[], week_ahead=[]):
 
     return html
 
-def push_to_github(html_content, filename='index.html'):
-    """Push HTML to GitHub as index.html — Netlify auto-deploys with functions"""
-    headers = {
-        'Authorization': f'token {GITHUB_TOKEN}',
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-    }
-    # Get current SHA
-    res = requests.get(
-        f'https://api.github.com/repos/{GITHUB_REPO}/contents/{filename}',
-        headers=headers
-    )
-    sha = res.json().get('sha') if res.status_code == 200 else None
-
-    content_b64 = base64.b64encode(html_content.encode('utf-8')).decode('utf-8')
-    payload = {
-        'message': f'Daily update {datetime.now().strftime("%Y-%m-%d")}',
-        'content': content_b64,
-    }
-    if sha:
-        payload['sha'] = sha
-
-    result = requests.put(
-        f'https://api.github.com/repos/{GITHUB_REPO}/contents/{filename}',
-        headers=headers, json=payload
-    )
-    print(f'GitHub push status: {result.status_code}')
-    if result.status_code in [200, 201]:
-        print('Success — Netlify will auto-deploy with functions intact')
-    else:
-        print(f'GitHub push failed: {result.text[:200]}')
-
-def deploy_direct(html_content):
+def deploy_to_netlify(html_content):
+    """Direct Netlify API deploy — no build credits needed"""
     encoded = html_content.encode('utf-8')
     sha1 = hashlib.sha1(encoded).hexdigest()
     headers = {'Authorization': f'Bearer {NETLIFY_AUTH_TOKEN}', 'Content-Type': 'application/json'}
     url = f'https://api.netlify.com/api/v1/sites/{NETLIFY_SITE_ID}/deploys'
     manifest = requests.post(url, headers=headers, json={'files': {'/index.html': sha1}})
     manifest_data = manifest.json()
+    print(f'Manifest: {manifest.status_code}')
     deploy_id = manifest_data.get('id')
     if manifest_data.get('required'):
-        requests.put(
+        up = requests.put(
             f'https://api.netlify.com/api/v1/deploys/{deploy_id}/files/index.html',
             headers={'Authorization': f'Bearer {NETLIFY_AUTH_TOKEN}', 'Content-Type': 'text/html; charset=UTF-8'},
-            data=encoded)
-    print(f'Direct deploy ID: {deploy_id}')
+            data=encoded
+        )
+        print(f'Upload: {up.status_code}')
+    print(f'Deploy ID: {deploy_id}')
 
 if __name__ == '__main__':
     service = get_calendar_service()
@@ -227,5 +198,5 @@ if __name__ == '__main__':
     carryover = get_yesterdays_unchecked(service, today_str)
     week_ahead = get_next_5_days(service, today_str)
     html = build_dashboard(events, carryover, week_ahead)
-    push_to_github(html)
+    deploy_to_netlify(html)
     print('Done!')
