@@ -596,11 +596,11 @@ fetchWeather();
 // WEEK AHEAD
 // ═══════════════════════════════════════
 var WEEK_AHEAD=[
-  {label:'Sun May 10',events:[]},
   {label:'Mon May 11',events:['🌅 Morning Work Block','🔨 Construction & Admin','Theresa’s']},
   {label:'Tue May 12',events:['🌅 Morning Work Block','🏋️ Gym','🔨 Construction & Admin']},
   {label:'Wed May 13',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']},
-  {label:'Thu May 14',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']}
+  {label:'Thu May 14',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']},
+  {label:'Fri May 15',events:['🌅 Morning Work Block','🏋️ Gym','🔨 Construction & Admin']}
 ];
 (function(){
   var el=document.getElementById('week-ahead-list');if(!el)return;
@@ -669,17 +669,18 @@ showQuote();
 // PUNCHLIST — SUPABASE SYNCED
 // ═══════════════════════════════════════
 var PL_PRIORITIES=[
-  {id:'p1',text:'Museum of science',time:'12:00 PM'},
-  {id:'p2',text:'Softball Game - Obear',time:'12:30 PM'}
+
 ];
 var PL_AGENDA=[
-  {id:'a1', time:'all day', text:'Lori’s fridge', sub:''},
-  {id:'a2', time:'all day', text:'Haig’s plan', sub:''},
-  {id:'a3', time:'all day', text:'1962 mortgage payment', sub:''},
-  {id:'a4', time:'all day', text:'Fix pipe', sub:''},
-  {id:'a5', time:'all day', text:'Cushions out and back from dry cleaner set up backyard', sub:''},
-  {id:'a6', time:'carry over', text:'Board of Directors connection LLC', sub:'from yesterday'},
-  {id:'a7', time:'carry over', text:'Viola at School', sub:'from yesterday'}
+  {id:'a1', time:'all day', text:'55 Paine — set up seasonal calendar events', sub:''},
+  {id:'a2', time:'all day', text:'Sowa - All Day', sub:''},
+  {id:'a3', time:'all day', text:'Drop Craig\'s Wheels off', sub:''},
+  {id:'a4', time:'all day', text:'🌸 Kell\'s Flower Show — SoWa', sub:''},
+  {id:'a5', time:'carry over', text:'Lori’s fridge', sub:'from yesterday'},
+  {id:'a6', time:'carry over', text:'Haig’s plan', sub:'from yesterday'},
+  {id:'a7', time:'carry over', text:'1962 mortgage payment', sub:'from yesterday'},
+  {id:'a8', time:'carry over', text:'Fix pipe', sub:'from yesterday'},
+  {id:'a9', time:'carry over', text:'Cushions out and back from dry cleaner set up backyard', sub:'from yesterday'}
 ];
 var PL_TOTAL=PL_PRIORITIES.length+PL_AGENDA.length;
 
