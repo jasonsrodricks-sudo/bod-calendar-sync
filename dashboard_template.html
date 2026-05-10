@@ -680,13 +680,14 @@ var plReady=false;
 
 async function plInit(){
   var today=todayStr();
-  // Load full state blob from Supabase
+  // Load full state blob from Render proxy
   try{
-    var rows=await sbGet('daily_checklist','date=eq.'+today+'&select=state');
+    var res=await fetch('https://bod-proxy.onrender.com/checklist?date='+today);
+    var rows=await res.json();
     if(Array.isArray(rows)&&rows.length>0&&rows[0].state){
       plCache=JSON.parse(rows[0].state);
     }
-  }catch(e){}
+  }catch(e){console.log('proxy load error',e);}
   // Merge localStorage on top
   try{
     var local=JSON.parse(localStorage.getItem('pl-'+today)||'{}');
@@ -703,10 +704,16 @@ async function plToggle(id){
   if(el)el.classList.toggle('done',!!plCache[id]);
   plUpdateProgress();
   var today=todayStr();
-  // Save full state blob to localStorage immediately
+  // Save to localStorage immediately
   try{localStorage.setItem('pl-'+today,JSON.stringify(plCache));}catch(e){}
-  // Save full state blob to Supabase — one row per day, no upsert conflicts
-  await sbUpsert('daily_checklist',{date:today,state:JSON.stringify(plCache)});
+  // Save full state blob to Render proxy — no CORS issues
+  try{
+    await fetch('https://bod-proxy.onrender.com/checklist',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date:today,state:JSON.stringify(plCache)})
+    });
+  }catch(e){console.log('proxy save error',e);}
 }
 
 function plUpdateProgress(){
@@ -969,7 +976,7 @@ function openProject(id){
   punchAdd.value='';
 
   // Load from Supabase
-  sbGet('project_punchlist','project_id=eq.'+id+'&order=created_at.asc').then(function(rows){
+  fetch('https://bod-proxy.onrender.com/punchlist?project_id='+id).then(function(r){return r.json();}).then(function(rows){
     pList.innerHTML='';
     if(Array.isArray(rows)&&rows.length>0){
       rows.forEach(function(p){renderProjPunchItem(pList,p,id);});
@@ -988,8 +995,8 @@ function openProject(id){
     if(e.key==='Enter'){
       var val=this.value.trim();if(!val)return;
       punchAdd.value='';
-      // Save to Supabase
-      sbUpsert('project_punchlist',{project_id:id,text:val,done:false}).then(function(){
+      // Save via Render proxy
+      fetch('https://bod-proxy.onrender.com/punchlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project_id:id,text:val,done:false})}).then(function(){
         flashSaved('proj-punch-saved');
         openProject(id);
       });
@@ -1011,9 +1018,9 @@ function renderProjPunchItem(list,p,projId){
     flashSaved('proj-punch-saved');
     if(p.id&&p.id.toString().indexOf('local-')===-1){
       // Update in Supabase
-      fetch(SB_URL+'/rest/v1/project_punchlist?id=eq.'+p.id,{
+      fetch('https://bod-proxy.onrender.com/punchlist?id='+p.id,{
         method:'PATCH',
-        headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+        headers:{'Content-Type':'application/json'},
         body:JSON.stringify({done:newDone})
       });
     }
