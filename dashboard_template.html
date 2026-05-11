@@ -680,22 +680,25 @@ var plReady=false;
 
 async function plInit(){
   var today=todayStr();
-  // Load full state blob from Render proxy
+  // Render immediately with localStorage (instant on all devices)
+  try{
+    var local=JSON.parse(localStorage.getItem('pl-'+today)||'{}');
+    plCache=local;
+  }catch(e){}
+  plRender();
+  plUpdateProgress();
+  // Then fetch from proxy and RE-RENDER when data arrives
   try{
     var res=await fetch('https://bod-proxy.onrender.com/checklist?date='+today);
     var rows=await res.json();
     if(Array.isArray(rows)&&rows.length>0&&rows[0].state){
-      plCache=JSON.parse(rows[0].state);
+      var remoteCache=JSON.parse(rows[0].state);
+      Object.keys(remoteCache).forEach(function(k){plCache[k]=remoteCache[k];});
+      plRender();
+      plUpdateProgress();
     }
   }catch(e){console.log('proxy load error',e);}
-  // Merge localStorage on top
-  try{
-    var local=JSON.parse(localStorage.getItem('pl-'+today)||'{}');
-    Object.keys(local).forEach(function(k){if(!(k in plCache))plCache[k]=local[k];});
-  }catch(e){}
   plReady=true;
-  plRender();
-  plUpdateProgress();
 }
 
 async function plToggle(id){
