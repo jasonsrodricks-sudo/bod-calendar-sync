@@ -129,7 +129,7 @@ def build_dashboard(events, carryover=[], week_ahead=[]):
 
     a_items = []
     idx = 1
- for e in timed:
+    for e in timed:
         title = e.get('summary', '').replace("'", "\\'")
         time_str = format_time(e.get('start', {}).get('dateTime', ''))
         a_items.append("  {id:'a" + str(idx) + "', time:'" + time_str + "', text:'" + title + "', sub:''}")
