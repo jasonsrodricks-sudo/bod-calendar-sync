@@ -773,7 +773,7 @@ function plRender(){
   rightEl.innerHTML='';
   var priorityTexts=PL_PRIORITIES.map(function(p){return p.text.toLowerCase();});
   var timed=PL_AGENDA.filter(function(a){
-    return a.time!=='all day'&&a.time!=='carry over'&&priorityTexts.indexOf(a.text.toLowerCase())===-1;
+    return a.time!=='all day'&&a.time!=='carry over';
   });
   timed.forEach(function(a){
     var div=document.createElement('div');
