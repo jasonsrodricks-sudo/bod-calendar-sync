@@ -339,9 +339,12 @@ footer strong{color:var(--gold);}
     <span class="hz-badge">Health Zone</span>
     <div class="hz-title">Daily Movement</div>
     <div class="hz-meta">
-      <div class="hz-meta-item">Score<span class="hz-meta-val" id="hz-score">0</span></div>
-      <div class="hz-meta-item">Streak<span class="hz-meta-val" id="hz-streak">0</span><span style="font-size:9px;color:rgba(242,237,228,0.35);margin-left:3px;">days</span></div>
-    </div>
+  <div class="hz-meta-item">Score<span class="hz-meta-val" id="hz-score">0</span></div>
+  <div class="hz-meta-item">Streak<span class="hz-meta-val" id="hz-streak">0</span><span style="font-size:9px;color:rgba(242,237,228,0.35);margin-left:3px;">days</span></div>
+  <div style="flex:1;margin-left:24px;">
+    <canvas id="hz-graph" height="40" style="width:100%;opacity:0.85;"></canvas>
+  </div>
+</div>
     <table class="hz-table">
       <thead><tr><th class="left">Exercise</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>Total</th></tr></thead>
       <tbody id="hz-body"></tbody>
@@ -596,11 +599,11 @@ fetchWeather();
 // WEEK AHEAD
 // ═══════════════════════════════════════
 var WEEK_AHEAD=[
-  {label:'Wed May 13',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']},
   {label:'Thu May 14',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']},
   {label:'Fri May 15',events:['🌅 Morning Work Block','🏋️ Gym','🔨 Construction & Admin']},
   {label:'Sat May 16',events:['💃 Dance Recital','ICA w/ T-Bird']},
-  {label:'Sun May 17',events:['☀️ Meeting','Manchester','🥎 Softball — Obear']}
+  {label:'Sun May 17',events:['☀️ Meeting','Manchester','🥎 Softball — Obear']},
+  {label:'Mon May 18',events:['🌅 Morning Work Block','Drop Syd ','🔨 Construction & Admin']}
 ];
 (function(){
   var el=document.getElementById('week-ahead-list');if(!el)return;
@@ -669,19 +672,21 @@ showQuote();
 // PUNCHLIST — SUPABASE SYNCED
 // ═══════════════════════════════════════
 var PL_PRIORITIES=[
-  {id:'p1',text:'🏋️ Gym',time:'8:00 AM'},
-  {id:'p2',text:'Pick up Syd',time:'1:45 PM'},
-  {id:'p3',text:'🌅 Morning Work Block',time:'5:30 AM'}
+  {id:'p1',text:'Drop Syd',time:'7:30 AM'},
+  {id:'p2',text:'🏋️ Gym',time:'8:00 AM'},
+  {id:'p3',text:'Pick up Syd',time:'1:45 PM'}
 ];
 var PL_AGENDA=[
   {id:'a1', time:'5:30 AM', text:'🌅 Morning Work Block', sub:''},
-  {id:'a2', time:'8:00 AM', text:'🏋️ Gym', sub:''},
-  {id:'a3', time:'8:00 AM', text:'🔨 Lori\'s job — DONE by end of day ⚠️', sub:''},
-  {id:'a4', time:'9:30 AM', text:'🔨 Construction & Admin', sub:''},
-  {id:'a5', time:'1:45 PM', text:'Pick up Syd', sub:''},
-  {id:'a6', time:'3:00 PM', text:'📋 Put together Marie\'s house list', sub:''},
-  {id:'a7', time:'4:30 PM', text:'💃 Dance', sub:''},
-  {id:'a8', time:'all day', text:'Carpets re-cleaned', sub:''}
+  {id:'a2', time:'7:30 AM', text:'Drop Syd ', sub:''},
+  {id:'a3', time:'8:00 AM', text:'🏋️ Gym', sub:''},
+  {id:'a4', time:'8:00 AM', text:'🔨 Haig\'s job — install day', sub:''},
+  {id:'a5', time:'9:00 AM', text:'Haig’s w/ Alex', sub:''},
+  {id:'a6', time:'9:30 AM', text:'🔨 Construction & Admin', sub:''},
+  {id:'a7', time:'1:45 PM', text:'Pick up Syd', sub:''},
+  {id:'a8', time:'5:30 PM', text:'🥎 Softball — Bumble Bee', sub:''},
+  {id:'a9', time:'all day', text:'Recycling', sub:''},
+  {id:'a10', time:'carry over', text:'Carpets re-cleaned', sub:'from yesterday'}
 ];
 var PL_TOTAL=PL_PRIORITIES.length+PL_AGENDA.length;
 
@@ -914,6 +919,50 @@ function hzBuild(){
   });
   var g=document.getElementById('hz-grand');if(g)g.textContent=grand||'0';
   var sc=document.getElementById('hz-score');if(sc)sc.textContent=grand||'0';
+  hzDrawGraph();
+  function hzDrawGraph(){
+  var canvas=document.getElementById('hz-graph');
+  if(!canvas)return;
+  canvas.width=canvas.offsetWidth*window.devicePixelRatio||300;
+  var ctx=canvas.getContext('2d');
+  var w=canvas.width,h=canvas.height=40*window.devicePixelRatio;
+  ctx.clearRect(0,0,w,h);
+  var scores=[];
+  var d=new Date();
+  for(var i=13;i>=0;i--){
+    var dd=new Date(d);dd.setDate(d.getDate()-i);
+    var key=dd.getFullYear()+'-'+String(dd.getMonth()+1).padStart(2,'0')+'-'+String(dd.getDate()).padStart(2,'0');
+    try{
+      var local=localStorage.getItem('hz-'+key);
+      if(local){
+        var s=JSON.parse(local);
+        var total=0;
+        HZ_EXERCISES.forEach(function(ex,ei){if(s[ei])s[ei].forEach(function(on){if(on)total+=ex.val;});});
+        scores.push(total);
+      }else{scores.push(0);}
+    }catch(e){scores.push(0);}
+  }
+  scores[13]=parseInt(document.getElementById('hz-score').textContent)||0;
+  var maxScore=1553;
+  var pts=scores.map(function(s,i){
+    return{x:(i/(scores.length-1))*w,y:h-((s/maxScore))*(h*0.8)-(h*0.1)};
+  });
+  ctx.shadowColor='#c9a84c';
+  ctx.shadowBlur=8*window.devicePixelRatio;
+  ctx.strokeStyle='#c9a84c';
+  ctx.lineWidth=1.5*window.devicePixelRatio;
+  ctx.lineJoin='round';
+  ctx.lineCap='round';
+  ctx.beginPath();
+  pts.forEach(function(p,i){i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);});
+  ctx.stroke();
+  ctx.shadowBlur=12*window.devicePixelRatio;
+  ctx.fillStyle='#c9a84c';
+  ctx.beginPath();
+  ctx.arc(pts[13].x,pts[13].y,3*window.devicePixelRatio,0,Math.PI*2);
+  ctx.fill();
+  ctx.shadowBlur=0;
+}
 }
 
 hzLoad();
