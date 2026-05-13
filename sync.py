@@ -169,24 +169,31 @@ def build_dashboard(events, carryover=[], week_ahead=[]):
     return html
 
 def deploy_to_netlify(html_content):
-    """Direct Netlify API deploy — no build credits needed"""
+    """Push index.html to GitHub — Netlify auto-deploys from repo"""
+    import base64
     encoded = html_content.encode('utf-8')
-    sha1 = hashlib.sha1(encoded).hexdigest()
-    headers = {'Authorization': f'Bearer {NETLIFY_AUTH_TOKEN}', 'Content-Type': 'application/json'}
-    url = f'https://api.netlify.com/api/v1/sites/{NETLIFY_SITE_ID}/deploys'
-    manifest = requests.post(url, headers=headers, json={'files': {'/index.html': sha1}})
-    manifest_data = manifest.json()
-    print(f'Manifest: {manifest.status_code}')
-    deploy_id = manifest_data.get('id')
-    if manifest_data.get('required'):
-        up = requests.put(
-            f'https://api.netlify.com/api/v1/deploys/{deploy_id}/files/index.html',
-            headers={'Authorization': f'Bearer {NETLIFY_AUTH_TOKEN}', 'Content-Type': 'text/html; charset=UTF-8'},
-            data=encoded
-        )
-        print(f'Upload: {up.status_code}')
-    print(f'Deploy ID: {deploy_id}')
-
+    b64 = base64.b64encode(encoded).decode('utf-8')
+    
+    # Get current file SHA (required by GitHub API to update a file)
+    headers = {
+        'Authorization': f'token {GITHUB_TOKEN}',
+        'Accept': 'application/vnd.github.v3+json'
+    }
+    get_url = f'https://api.github.com/repos/{GITHUB_REPO}/contents/index.html'
+    get_res = requests.get(get_url, headers=headers)
+    sha = get_res.json().get('sha', '')
+    
+    # Push updated file
+    push_res = requests.put(
+        get_url,
+        headers=headers,
+        json={
+            'message': f'Daily update {datetime.now().strftime("%Y-%m-%d")}',
+            'content': b64,
+            'sha': sha
+        }
+    )
+    print(f'GitHub push: {push_res.status_code}')
 if __name__ == '__main__':
     service = get_calendar_service()
     eastern_now = datetime.now(timezone.utc) + timedelta(hours=-4)
