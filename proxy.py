@@ -73,7 +73,30 @@ def update_punchlist():
         json=data
     )
     return jsonify({'ok': True, 'status': res.status_code})
+@app.route('/health', methods=['GET'])
+def get_health():
+    date = request.args.get('date')
+    if not date:
+        return jsonify([])
+    res = requests.get(
+        SB_URL + '/rest/v1/health_stats?date=eq.' + date + '&select=*',
+        headers=SB_HEADERS
+    )
+    return jsonify(res.json())
 
+@app.route('/health', methods=['POST'])
+def save_health():
+    data = request.get_json()
+    date = data.get('date')
+    state = data.get('state')
+    if not date or state is None:
+        return jsonify({'error': 'missing data'}), 400
+    res = requests.post(
+        SB_URL + '/rest/v1/health_stats',
+        headers=SB_HEADERS,
+        json={'date': date, 'state': state}
+    )
+    return jsonify({'ok': True, 'status': res.status_code})
 @app.route('/')
 def health():
     return 'BOD Proxy OK', 200
