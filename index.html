@@ -822,13 +822,21 @@ var HZ_EXERCISES=[
 var HZ_SETS=6;
 var hzState=HZ_EXERCISES.map(function(ex){return new Array(HZ_SETS).fill(false);});
 
-function hzSave(){
+async function hzSave(){
   var key=todayStr();
   try{localStorage.setItem('hz-'+key,JSON.stringify(hzState));}catch(e){}
+  try{
+    await fetch('https://bod-proxy.onrender.com/health',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date:key,state:JSON.stringify(hzState)})
+    });
+  }catch(e){console.log('hz save error',e);}
 }
 
-function hzLoad(){
+async function hzLoad(){
   var key=todayStr();
+  // Load from localStorage first (instant)
   try{
     var local=localStorage.getItem('hz-'+key);
     if(local){
@@ -837,8 +845,17 @@ function hzLoad(){
     }
   }catch(e){}
   hzBuild();
+  // Then fetch from proxy and re-render
+  try{
+    var res=await fetch('https://bod-proxy.onrender.com/health?date='+key);
+    var rows=await res.json();
+    if(Array.isArray(rows)&&rows.length>0&&rows[0].state){
+      hzState=JSON.parse(rows[0].state);
+      while(hzState.length<HZ_EXERCISES.length)hzState.push(new Array(HZ_SETS).fill(false));
+      hzBuild();
+    }
+  }catch(e){console.log('hz load error',e);}
 }
-
 function hzLoadStreak(){
   var streak=0;
   var d=new Date();
