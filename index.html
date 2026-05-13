@@ -596,11 +596,11 @@ fetchWeather();
 // WEEK AHEAD
 // ═══════════════════════════════════════
 var WEEK_AHEAD=[
-  {label:'Mon May 11',events:['🌅 Morning Work Block','🔨 Construction & Admin','Theresa’s']},
-  {label:'Tue May 12',events:['🌅 Morning Work Block','🏋️ Gym','🔨 Construction & Admin']},
   {label:'Wed May 13',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']},
   {label:'Thu May 14',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']},
-  {label:'Fri May 15',events:['🌅 Morning Work Block','🏋️ Gym','🔨 Construction & Admin']}
+  {label:'Fri May 15',events:['🌅 Morning Work Block','🏋️ Gym','🔨 Construction & Admin']},
+  {label:'Sat May 16',events:['💃 Dance Recital','ICA w/ T-Bird']},
+  {label:'Sun May 17',events:['☀️ Meeting','Manchester','🥎 Softball — Obear']}
 ];
 (function(){
   var el=document.getElementById('week-ahead-list');if(!el)return;
@@ -669,18 +669,19 @@ showQuote();
 // PUNCHLIST — SUPABASE SYNCED
 // ═══════════════════════════════════════
 var PL_PRIORITIES=[
-
+  {id:'p1',text:'🏋️ Gym',time:'8:00 AM'},
+  {id:'p2',text:'Pick up Syd',time:'1:45 PM'},
+  {id:'p3',text:'🌅 Morning Work Block',time:'5:30 AM'}
 ];
 var PL_AGENDA=[
-  {id:'a1', time:'all day', text:'55 Paine — set up seasonal calendar events', sub:''},
-  {id:'a2', time:'all day', text:'Sowa - All Day', sub:''},
-  {id:'a3', time:'all day', text:'Drop Craig\'s Wheels off', sub:''},
-  {id:'a4', time:'all day', text:'🌸 Kell\'s Flower Show — SoWa', sub:''},
-  {id:'a5', time:'carry over', text:'Lori’s fridge', sub:'from yesterday'},
-  {id:'a6', time:'carry over', text:'Haig’s plan', sub:'from yesterday'},
-  {id:'a7', time:'carry over', text:'1962 mortgage payment', sub:'from yesterday'},
-  {id:'a8', time:'carry over', text:'Fix pipe', sub:'from yesterday'},
-  {id:'a9', time:'carry over', text:'Cushions out and back from dry cleaner set up backyard', sub:'from yesterday'}
+  {id:'a1', time:'5:30 AM', text:'🌅 Morning Work Block', sub:''},
+  {id:'a2', time:'8:00 AM', text:'🏋️ Gym', sub:''},
+  {id:'a3', time:'8:00 AM', text:'🔨 Lori\'s job — DONE by end of day ⚠️', sub:''},
+  {id:'a4', time:'9:30 AM', text:'🔨 Construction & Admin', sub:''},
+  {id:'a5', time:'1:45 PM', text:'Pick up Syd', sub:''},
+  {id:'a6', time:'3:00 PM', text:'📋 Put together Marie\'s house list', sub:''},
+  {id:'a7', time:'4:30 PM', text:'💃 Dance', sub:''},
+  {id:'a8', time:'all day', text:'Carpets re-cleaned', sub:''}
 ];
 var PL_TOTAL=PL_PRIORITIES.length+PL_AGENDA.length;
 
@@ -689,21 +690,25 @@ var plReady=false;
 
 async function plInit(){
   var today=todayStr();
-  // Load full state blob from Supabase
-  try{
-    var rows=await sbGet('daily_checklist','date=eq.'+today+'&select=state');
-    if(Array.isArray(rows)&&rows.length>0&&rows[0].state){
-      plCache=JSON.parse(rows[0].state);
-    }
-  }catch(e){}
-  // Merge localStorage on top
+  // Render immediately with localStorage (instant on all devices)
   try{
     var local=JSON.parse(localStorage.getItem('pl-'+today)||'{}');
-    Object.keys(local).forEach(function(k){if(!(k in plCache))plCache[k]=local[k];});
+    plCache=local;
   }catch(e){}
-  plReady=true;
   plRender();
   plUpdateProgress();
+  // Then fetch from proxy and RE-RENDER when data arrives
+  try{
+    var res=await fetch('https://bod-proxy.onrender.com/checklist?date='+today);
+    var rows=await res.json();
+    if(Array.isArray(rows)&&rows.length>0&&rows[0].state){
+      var remoteCache=JSON.parse(rows[0].state);
+      Object.keys(remoteCache).forEach(function(k){plCache[k]=remoteCache[k];});
+      plRender();
+      plUpdateProgress();
+    }
+  }catch(e){console.log('proxy load error',e);}
+  plReady=true;
 }
 
 async function plToggle(id){
@@ -712,10 +717,16 @@ async function plToggle(id){
   if(el)el.classList.toggle('done',!!plCache[id]);
   plUpdateProgress();
   var today=todayStr();
-  // Save full state blob to localStorage immediately
+  // Save to localStorage immediately
   try{localStorage.setItem('pl-'+today,JSON.stringify(plCache));}catch(e){}
-  // Save full state blob to Supabase — one row per day, no upsert conflicts
-  await sbUpsert('daily_checklist',{date:today,state:JSON.stringify(plCache)});
+  // Save full state blob to Render proxy — no CORS issues
+  try{
+    await fetch('https://bod-proxy.onrender.com/checklist',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({date:today,state:JSON.stringify(plCache)})
+    });
+  }catch(e){console.log('proxy save error',e);}
 }
 
 function plUpdateProgress(){
@@ -772,7 +783,7 @@ function plRender(){
   rightEl.innerHTML='';
   var priorityTexts=PL_PRIORITIES.map(function(p){return p.text.toLowerCase();});
   var timed=PL_AGENDA.filter(function(a){
-    return a.time!=='all day'&&a.time!=='carry over'&&priorityTexts.indexOf(a.text.toLowerCase())===-1;
+    return a.time!=='all day'&&a.time!=='carry over';
   });
   timed.forEach(function(a){
     var div=document.createElement('div');
@@ -978,7 +989,7 @@ function openProject(id){
   punchAdd.value='';
 
   // Load from Supabase
-  sbGet('project_punchlist','project_id=eq.'+id+'&order=created_at.asc').then(function(rows){
+  fetch('https://bod-proxy.onrender.com/punchlist?project_id='+id).then(function(r){return r.json();}).then(function(rows){
     pList.innerHTML='';
     if(Array.isArray(rows)&&rows.length>0){
       rows.forEach(function(p){renderProjPunchItem(pList,p,id);});
@@ -997,8 +1008,8 @@ function openProject(id){
     if(e.key==='Enter'){
       var val=this.value.trim();if(!val)return;
       punchAdd.value='';
-      // Save to Supabase
-      sbUpsert('project_punchlist',{project_id:id,text:val,done:false}).then(function(){
+      // Save via Render proxy
+      fetch('https://bod-proxy.onrender.com/punchlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project_id:id,text:val,done:false})}).then(function(){
         flashSaved('proj-punch-saved');
         openProject(id);
       });
@@ -1020,9 +1031,9 @@ function renderProjPunchItem(list,p,projId){
     flashSaved('proj-punch-saved');
     if(p.id&&p.id.toString().indexOf('local-')===-1){
       // Update in Supabase
-      fetch(SB_URL+'/rest/v1/project_punchlist?id=eq.'+p.id,{
+      fetch('https://bod-proxy.onrender.com/punchlist?id='+p.id,{
         method:'PATCH',
-        headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+        headers:{'Content-Type':'application/json'},
         body:JSON.stringify({done:newDone})
       });
     }
