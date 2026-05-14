@@ -51,8 +51,11 @@ def get_next_5_days(service, today_str):
                 timeZone='America/New_York'
             ).execute()
             events = result.get('items', [])
+           RECURRING = ['morning work block', 'gym', 'construction & admin',
+                        'drop syd', 'pick up syd']
             timed = [e for e in events if e.get('start', {}).get('dateTime')
-                     and not any(e.get('summary','').lower().startswith(p) for p in EXCLUDE_PREFIXES)]
+                     and not any(e.get('summary','').lower().startswith(p) for p in EXCLUDE_PREFIXES)
+                     and not any(e.get('summary','').lower().startswith(r) for r in RECURRING)]
             week.append({'day': d.strftime('%a'), 'month': d.strftime('%b'),
                          'day_num': d.strftime('%-d'), 'events': timed[:3]})
         except:
