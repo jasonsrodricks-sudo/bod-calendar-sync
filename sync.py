@@ -52,7 +52,7 @@ def get_next_5_days(service, today_str):
             ).execute()
             events = result.get('items', [])
             RECURRING = ['morning work block', 'gym', 'construction & admin',
-                        'drop syd', 'pick up syd']
+                        'drop syd', 'pick up syd', '🌅', '🏋️', '🔨']
             timed = [e for e in events if e.get('start', {}).get('dateTime')
                      and not any(e.get('summary','').lower().startswith(p) for p in EXCLUDE_PREFIXES)
                      and not any(e.get('summary','').lower().startswith(r) for r in RECURRING)]
