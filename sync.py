@@ -136,7 +136,7 @@ def build_dashboard(events, carryover=[], week_ahead=[]):
         p_items.append("  {id:'p" + str(i+1) + "',text:'" + title + "',time:'" + time_str + "'}")
     pl_priorities = 'var PL_PRIORITIES=[\n' + ',\n'.join(p_items) + '\n];'
 
-a_items = []
+    a_items = []
     idx = 1
     priority_titles = {e.get('summary', '').lower() for e in priorities}
     for e in timed:
