@@ -62,11 +62,17 @@ def get_next_5_days(service, today_str):
 
 def get_yesterdays_unchecked(service, today_str):
     base = datetime.strptime(today_str, '%Y-%m-%d')
-    yesterday_str = (base - timedelta(days=1)).strftime('%Y-%m-%d')
-    events = get_events_for_day(service, yesterday_str)
-    unchecked = [e for e in events if e.get('start', {}).get('date')
-                 and not e.get('start', {}).get('dateTime')
-                 and not any(e.get('summary','').lower().startswith(p) for p in EXCLUDE_PREFIXES)]
+    unchecked = []
+    for days_back in range(1, 31):
+        past_str = (base - timedelta(days=days_back)).strftime('%Y-%m-%d')
+        events = get_events_for_day(service, past_str)
+        for e in events:
+            if (e.get('start', {}).get('date')
+                    and not e.get('start', {}).get('dateTime')
+                    and not any(e.get('summary','').lower().startswith(p) for p in EXCLUDE_PREFIXES)):
+                title = e.get('summary','').lower()
+                if not any(u.get('summary','').lower() == title for u in unchecked):
+                    unchecked.append(e)
     print(f'Carrying over {len(unchecked)} unchecked items')
     return unchecked
 
