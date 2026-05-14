@@ -599,11 +599,11 @@ fetchWeather();
 // WEEK AHEAD
 // ═══════════════════════════════════════
 var WEEK_AHEAD=[
-  {label:'Thu May 14',events:['🌅 Morning Work Block','Drop Syd ','🏋️ Gym']},
   {label:'Fri May 15',events:['🌅 Morning Work Block','🏋️ Gym','🔨 Construction & Admin']},
   {label:'Sat May 16',events:['💃 Dance Recital','ICA w/ T-Bird']},
   {label:'Sun May 17',events:['☀️ Meeting','Manchester','🥎 Softball — Obear']},
-  {label:'Mon May 18',events:['🌅 Morning Work Block','Drop Syd ','🔨 Construction & Admin']}
+  {label:'Mon May 18',events:['🌅 Morning Work Block','Drop Syd ','🔨 Construction & Admin']},
+  {label:'Tue May 19',events:['🌅 Morning Work Block','🏋️ Gym','🔨 Construction & Admin']}
 ];
 (function(){
   var el=document.getElementById('week-ahead-list');if(!el)return;
@@ -673,20 +673,18 @@ showQuote();
 // ═══════════════════════════════════════
 var PL_PRIORITIES=[
   {id:'p1',text:'Drop Syd',time:'7:30 AM'},
-  {id:'p2',text:'🏋️ Gym',time:'8:00 AM'},
-  {id:'p3',text:'Pick up Syd',time:'1:45 PM'}
+  {id:'p2',text:'Pick up Syd',time:'1:45 PM'},
+  {id:'p3',text:'🌅 Morning Work Block',time:'5:30 AM'}
 ];
 var PL_AGENDA=[
   {id:'a1', time:'5:30 AM', text:'🌅 Morning Work Block', sub:''},
   {id:'a2', time:'7:30 AM', text:'Drop Syd ', sub:''},
-  {id:'a3', time:'8:00 AM', text:'🏋️ Gym', sub:''},
-  {id:'a4', time:'8:00 AM', text:'🔨 Haig\'s job — install day', sub:''},
-  {id:'a5', time:'9:00 AM', text:'Haig’s w/ Alex', sub:''},
-  {id:'a6', time:'9:30 AM', text:'🔨 Construction & Admin', sub:''},
-  {id:'a7', time:'1:45 PM', text:'Pick up Syd', sub:''},
-  {id:'a8', time:'5:30 PM', text:'🥎 Softball — Bumble Bee', sub:''},
-  {id:'a9', time:'all day', text:'Recycling', sub:''},
-  {id:'a10', time:'carry over', text:'Carpets re-cleaned', sub:'from yesterday'}
+  {id:'a3', time:'8:30 AM', text:'19 Cogswell -- Check-in', sub:''},
+  {id:'a4', time:'10:00 AM', text:'19 Cogswell -- Check-in', sub:''},
+  {id:'a5', time:'1:30 PM', text:'✅ Haig\'s job — finalize', sub:''},
+  {id:'a6', time:'1:45 PM', text:'Pick up Syd', sub:''},
+  {id:'a7', time:'4:30 PM', text:'💃 Dance', sub:''},
+  {id:'a8', time:'carry over', text:'Recycling', sub:'from yesterday'}
 ];
 var PL_TOTAL=PL_PRIORITIES.length+PL_AGENDA.length;
 
