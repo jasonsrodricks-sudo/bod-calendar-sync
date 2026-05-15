@@ -8,7 +8,7 @@ from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 
-SCOPES = ['https://www.googleapis.com/auth/calendar']
+SCOPES = ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/tasks']
 TOKEN_JSON = os.environ.get('TOKEN_JSON')
 NETLIFY_SITE_ID = os.environ.get('NETLIFY_SITE_ID')
 NETLIFY_AUTH_TOKEN = os.environ.get('NETLIFY_AUTH_TOKEN')
@@ -78,6 +78,25 @@ def get_yesterdays_unchecked(service, today_str):
                     unchecked.append(e)
     print(f'Carrying over {len(unchecked)} unchecked items')
     return unchecked
+def get_google_tasks(service):
+    try:
+        tasks_service = build('tasks', 'v1', credentials=service._http.credentials)
+        tasklists = tasks_service.tasklists().list().execute()
+        items = []
+        for tl in tasklists.get('items', []):
+            tasks = tasks_service.tasks().list(
+                tasklist=tl['id'],
+                showCompleted=False,
+                showHidden=False
+            ).execute()
+            for t in tasks.get('items', []):
+                if t.get('status') != 'completed':
+                    items.append(t)
+        print(f'Found {len(items)} Google Tasks')
+        return items
+    except Exception as e:
+        print(f'Tasks error: {e}')
+        return []
 
 def is_priority(event):
     title = event.get('summary', '').lower()
