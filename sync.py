@@ -117,7 +117,7 @@ def format_time(dt_str):
         print(f'Time parse error: {e}')
         return dt_str
 
-def build_dashboard(events, carryover=[], week_ahead=[]):
+def build_dashboard(events, carryover=[], week_ahead=[], tasks=[]):
     # Download fresh template from GitHub
     headers = {
         'Authorization': f'token {GITHUB_TOKEN}',
