@@ -172,7 +172,7 @@ def build_dashboard(events, carryover=[], week_ahead=[], tasks=[]):
     for e in carryover:
         title = e.get('summary', '').replace("'", "\\'")
         a_items.append("  {id:'a" + str(idx) + "', time:'carry over', text:'" + title + "', sub:'from yesterday'}")
-     task_map_items = []
+        task_map_items = []
     for t in tasks:
         title = t.get('title', '').replace("'", "\\'")
         task_id = t.get('id', '').replace("'", "\\'")
