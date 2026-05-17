@@ -177,7 +177,7 @@ def build_dashboard(events, carryover=[], week_ahead=[], tasks=[]):
         title = t.get('title', '').replace("'", "\\'")
         task_id = t.get('id', '').replace("'", "\\'")
         tasklist_id = t.get('tasklist_id', '@default').replace("'", "\\'")
-        item_id = 'a' + str(idx)
+        item_id = 'task-' + task_id
         a_items.append("  {id:'" + item_id + "', time:'task', text:'" + title + "', sub:'google tasks'}")
         task_map_items.append("  '" + item_id + "':{task_id:'" + task_id + "',tasklist_id:'" + tasklist_id + "'}")
         idx += 1
