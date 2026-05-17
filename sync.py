@@ -171,13 +171,17 @@ def build_dashboard(events, carryover=[], week_ahead=[], tasks=[]):
     for e in carryover:
         title = e.get('summary', '').replace("'", "\\'")
         a_items.append("  {id:'a" + str(idx) + "', time:'carry over', text:'" + title + "', sub:'from yesterday'}")
-        idx += 1
+     task_map_items = []
     for t in tasks:
         title = t.get('title', '').replace("'", "\\'")
-        a_items.append("  {id:'a" + str(idx) + "', time:'task', text:'" + title + "', sub:'google tasks'}")
+        task_id = t.get('id', '').replace("'", "\\'")
+        tasklist_id = t.get('tasklist_id', '@default').replace("'", "\\'")
+        item_id = 'a' + str(idx)
+        a_items.append("  {id:'" + item_id + "', time:'task', text:'" + title + "', sub:'google tasks'}")
+        task_map_items.append("  '" + item_id + "':{task_id:'" + task_id + "',tasklist_id:'" + tasklist_id + "'}")
         idx += 1
     pl_agenda = 'var PL_AGENDA=[\n' + ',\n'.join(a_items) + '\n];'
-
+    pl_task_map = 'window.plTaskMap={\n' + ',\n'.join(task_map_items) + '\n};'
     week_items = []
     for day in week_ahead:
         titles = [e.get('summary','').replace("'","\\'") for e in day['events']]
@@ -192,7 +196,7 @@ def build_dashboard(events, carryover=[], week_ahead=[], tasks=[]):
     start_a = html.find('var PL_AGENDA=[')
     end_a = html.find('];', start_a) + 2
     html = html[:start_a] + pl_agenda + html[end_a:]
-
+    html = html.replace('var plTaskMap={};', pl_task_map)
     start_w = html.find('var WEEK_AHEAD=[')
     if start_w >= 0:
         end_w = html.find('];', start_w) + 2
