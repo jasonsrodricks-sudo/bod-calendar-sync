@@ -705,7 +705,7 @@ async function plToggle(id){
   var today=todayStr();
   // Save to localStorage immediately
   try{localStorage.setItem('pl-'+today,JSON.stringify(plCache));}catch(e){}
-  // Save full state blob to Render proxy — no CORS issues
+  // Save full state blob to Render proxy
   try{
     await fetch('https://bod-proxy.onrender.com/checklist',{
       method:'POST',
@@ -713,8 +713,19 @@ async function plToggle(id){
       body:JSON.stringify({date:today,state:JSON.stringify(plCache)})
     });
   }catch(e){console.log('proxy save error',e);}
+  // If this is a task item, mark complete in Google Tasks
+  if(plCache[id]===false){return;}// only on check, not uncheck
+  var taskData=window.plTaskMap&&window.plTaskMap[id];
+  if(taskData){
+    try{
+      await fetch('https://bod-proxy.onrender.com/task/complete',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({task_id:taskData.task_id,tasklist_id:taskData.tasklist_id})
+      });
+    }catch(e){console.log('task complete error',e);}
+  }
 }
-
 function plUpdateProgress(){
   var count=Object.values(plCache).filter(Boolean).length;
   var pct=Math.round((count/PL_TOTAL)*100);
