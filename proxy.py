@@ -97,6 +97,29 @@ def save_health():
         json={'date': date, 'state': state}
     )
     return jsonify({'ok': True, 'status': res.status_code})
+@app.route('/task/complete', methods=['POST'])
+def complete_task():
+    try:
+        data = request.get_json()
+        task_id = data.get('task_id')
+        tasklist_id = data.get('tasklist_id', '@default')
+        if not task_id:
+            return jsonify({'error': 'missing task_id'}), 400
+        token_json = os.environ.get('TOKEN_JSON')
+        creds = Credentials.from_authorized_user_info(json.loads(token_json), 
+            ['https://www.googleapis.com/auth/tasks'])
+        if creds.expired and creds.refresh_token:
+            from google.auth.transport.requests import Request
+            creds.refresh(Request())
+        from googleapiclient.discovery import build as gbuild
+        tasks_service = gbuild('tasks', 'v1', credentials=creds)
+        task = tasks_service.tasks().get(tasklist=tasklist_id, task=task_id).execute()
+        task['status'] = 'completed'
+        tasks_service.tasks().update(tasklist=tasklist_id, task=task_id, body=task).execute()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/')
 def health():
     return 'BOD Proxy OK', 200
