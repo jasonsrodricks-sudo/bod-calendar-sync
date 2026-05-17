@@ -785,7 +785,8 @@ function plRender(){
   });
   timed.forEach(function(a){
     var div=document.createElement('div');
-    div.className='pl-item'+(plCache[a.id]?' done':'');
+    var isDone=a.time==='task'?false:!!plCache[a.id];
+    div.className='pl-item'+(isDone?' done':'');
     div.id='plitem-'+a.id;
     div.innerHTML='<div class="pl-check"></div><span class="pl-time">'+a.time+'</span>'
       +'<div style="flex:1"><div class="pl-text">'+a.text+'</div>'+(a.sub?'<div class="pl-sub">'+a.sub+'</div>':'')+'</div>';
