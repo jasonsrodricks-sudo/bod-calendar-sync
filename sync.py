@@ -91,6 +91,7 @@ def get_google_tasks(service):
             ).execute()
             for t in tasks.get('items', []):
                 if t.get('status') != 'completed':
+                    t['tasklist_id'] = tl['id']
                     items.append(t)
         print(f'Found {len(items)} Google Tasks')
         return items
