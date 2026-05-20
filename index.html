@@ -599,11 +599,11 @@ fetchWeather();
 // WEEK AHEAD
 // ═══════════════════════════════════════
 var WEEK_AHEAD=[
-  {label:'Wed May 20',events:[]},
   {label:'Thu May 21',events:[]},
   {label:'Fri May 22',events:[]},
   {label:'Sat May 23',events:[]},
-  {label:'Sun May 24',events:[]}
+  {label:'Sun May 24',events:[]},
+  {label:'Mon May 25',events:['Ocean st']}
 ];
 (function(){
   var el=document.getElementById('week-ahead-list');if(!el)return;
@@ -672,14 +672,14 @@ showQuote();
 // PUNCHLIST — SUPABASE SYNCED
 // ═══════════════════════════════════════
 var PL_PRIORITIES=[
-  {id:'p1',text:'🏋️ Gym',time:'8:00 AM'},
-  {id:'p2',text:'Pick up Syd',time:'1:45 PM'},
-  {id:'p3',text:'🌅 Morning Work Block',time:'5:30 AM'}
+  {id:'p1',text:'Drop Syd',time:'7:30 AM'},
+  {id:'p2',text:'🏋️ Gym',time:'8:00 AM'},
+  {id:'p3',text:'Pick up Syd',time:'1:45 PM'}
 ];
 var PL_AGENDA=[
-  {id:'a1', time:'9:30 AM', text:'🔨 Construction & Admin', sub:''},
-  {id:'a2', time:'3:00 PM', text:'Airport Sean and Jane ', sub:''},
-  {id:'a3', time:'6:00 PM', text:'Kids event w Danielle &  Quinn at the pier in beverly ', sub:''},
+  {id:'a1', time:'5:30 AM', text:'🌅 Morning Work Block', sub:''},
+  {id:'a2', time:'9:30 AM', text:'🔨 Construction & Admin', sub:''},
+  {id:'a3', time:'all day', text:'Recycling', sub:''},
   {id:'a4', time:'carry over', text:'Recycling', sub:'from yesterday'},
   {id:'a4', time:'carry over', text:'Carpets re-cleaned', sub:'from yesterday'},
   {id:'a4', time:'carry over', text:'55 Paine — set up seasonal calendar events', sub:'from yesterday'},
