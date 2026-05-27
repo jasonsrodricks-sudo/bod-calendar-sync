@@ -677,25 +677,28 @@ var plReady=false;
 
 async function plInit(){
   var today=todayStr();
-  // Render immediately with localStorage (instant on all devices)
+  // Clear stale localStorage from previous days
   try{
-    var local=JSON.parse(localStorage.getItem('pl-'+today)||'{}');
-    plCache=local;
+    Object.keys(localStorage).forEach(function(k){
+      if(k.startsWith('pl-')&&k!=='pl-'+today)localStorage.removeItem(k);
+    });
   }catch(e){}
-  plRender();
-  plUpdateProgress();
-  // Then fetch from proxy and RE-RENDER when data arrives
+  // Load from checksync (Netlify function) — single source of truth
   try{
-    var res=await fetch('https://bod-proxy.onrender.com/checklist?date='+today);
+    var res=await fetch('/.netlify/functions/checksync?date='+today);
     var rows=await res.json();
     if(Array.isArray(rows)&&rows.length>0&&rows[0].state){
-      var remoteCache=JSON.parse(rows[0].state);
-      Object.keys(remoteCache).forEach(function(k){plCache[k]=remoteCache[k];});
-      plRender();
-      plUpdateProgress();
+      plCache=JSON.parse(rows[0].state);
+    }else{
+      plCache={};
     }
-  }catch(e){console.log('proxy load error',e);}
+  }catch(e){
+    // Fallback to localStorage if proxy fails
+    try{plCache=JSON.parse(localStorage.getItem('pl-'+today)||'{}');}catch(e2){plCache={};}
+  }
   plReady=true;
+  plRender();
+  plUpdateProgress();
 }
 
 async function plToggle(id){
