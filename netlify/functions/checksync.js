@@ -21,7 +21,7 @@ exports.handler = async (event) => {
     'apikey': SUPABASE_KEY,
     'Authorization': `Bearer ${SUPABASE_KEY}`,
     'Content-Type': 'application/json',
-    'Prefer': 'resolution=merge-duplicates'
+    'Prefer': 'resolution=merge-duplicates,return=minimal'
   };
 
   try {
@@ -29,7 +29,7 @@ exports.handler = async (event) => {
       const date = event.queryStringParameters?.date;
       if (!date) return { statusCode: 400, headers, body: JSON.stringify({error:'date required'}) };
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/daily_checklist?date=eq.${date}&select=item_id,checked`,
+        `${SUPABASE_URL}/rest/v1/daily_checklist?date=eq.${date}&select=state`,
         { headers: sbHeaders }
       );
       const data = await res.json();
@@ -38,14 +38,10 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === 'POST') {
       const body = JSON.parse(event.body || '{}');
-      // Use upsert — merge on date+item_id so we never overwrite other items
       const res = await fetch(`${SUPABASE_URL}/rest/v1/daily_checklist`, {
         method: 'POST',
-        headers: {
-          ...sbHeaders,
-          'Prefer': 'resolution=merge-duplicates,return=minimal'
-        },
-        body: JSON.stringify(body)
+        headers: sbHeaders,
+        body: JSON.stringify({date: body.date, state: body.state})
       });
       return { statusCode: 200, headers, body: JSON.stringify({ok: true}) };
     }
