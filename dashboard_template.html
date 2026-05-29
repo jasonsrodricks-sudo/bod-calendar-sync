@@ -727,7 +727,7 @@ function plUpdateProgress(){
 }
 
 function plRender(){
-  // LEFT: Top priorities + all-day + carryover
+  // LEFT: Top priorities + To Do (tasks) + Carried Over
   var leftEl=document.getElementById('pl-priorities');
   leftEl.innerHTML='';
   PL_PRIORITIES.forEach(function(p,i){
@@ -739,12 +739,12 @@ function plRender(){
     div.onclick=function(){plToggle(p.id);};
     leftEl.appendChild(div);
   });
-  // All day items
-  var allday=PL_AGENDA.filter(function(a){return a.time==='all day';});
-  if(allday.length>0){
-    var sep=document.createElement('div');sep.className='pl-section-sep';sep.textContent='All Day';
-    leftEl.appendChild(sep);
-    allday.forEach(function(a){
+  // To Do — Google Tasks
+  var tasks=PL_AGENDA.filter(function(a){return a.time==='task';});
+  if(tasks.length>0){
+    var sepT=document.createElement('div');sepT.className='pl-section-sep';sepT.textContent='To Do';
+    leftEl.appendChild(sepT);
+    tasks.forEach(function(a){
       var div=document.createElement('div');
       div.className='pl-item'+(plCache[a.id]?' done':'');
       div.id='plitem-'+a.id;
@@ -753,7 +753,7 @@ function plRender(){
       leftEl.appendChild(div);
     });
   }
-  // Carryover items
+  // Carried Over — untimed items from past days
   var carryover=PL_AGENDA.filter(function(a){return a.time==='carry over';});
   if(carryover.length>0){
     var sep2=document.createElement('div');sep2.className='pl-section-sep carryover';sep2.textContent='Carried Over';
@@ -768,17 +768,15 @@ function plRender(){
     });
   }
 
-  // RIGHT: Timed events only (no priorities, no all-day, no carryover)
+  // RIGHT: Timed events only (no tasks, no all-day, no carryover)
   var rightEl=document.getElementById('pl-agenda');
   rightEl.innerHTML='';
-  var priorityTexts=PL_PRIORITIES.map(function(p){return p.text.toLowerCase();});
   var timed=PL_AGENDA.filter(function(a){
-    return a.time!=='all day'&&a.time!=='carry over';
+    return a.time!=='all day'&&a.time!=='carry over'&&a.time!=='task';
   });
   timed.forEach(function(a){
     var div=document.createElement('div');
-    var isDone=a.time==='task'?false:!!plCache[a.id];
-    div.className='pl-item'+(isDone?' done':'');
+    div.className='pl-item'+(plCache[a.id]?' done':'');
     div.id='plitem-'+a.id;
     div.innerHTML='<div class="pl-check"></div><span class="pl-time">'+a.time+'</span>'
       +'<div style="flex:1"><div class="pl-text">'+a.text+'</div>'+(a.sub?'<div class="pl-sub">'+a.sub+'</div>':'')+'</div>';
