@@ -753,17 +753,17 @@ function plRender(){
       leftEl.appendChild(div);
     });
   }
-  // Carried Over — untimed items from past days
+  // Carried Over — untimed items from past days (dismissed items hidden)
   var carryover=PL_AGENDA.filter(function(a){return a.time==='carry over';});
   if(carryover.length>0){
     var sep2=document.createElement('div');sep2.className='pl-section-sep carryover';sep2.textContent='Carried Over';
     leftEl.appendChild(sep2);
     carryover.forEach(function(a){
       var div=document.createElement('div');
-      div.className='pl-item'+(plCache[a.id]?' done':'');
+      div.className='pl-item';
       div.id='plitem-'+a.id;
       div.innerHTML='<div class="pl-check"></div><span class="pl-text" style="color:var(--rust)">'+a.text+'</span>';
-      div.onclick=function(){plToggle(a.id);};
+      div.onclick=function(){dismissCarryover(a.id,a.text,div);};
       leftEl.appendChild(div);
     });
   }
@@ -783,6 +783,21 @@ function plRender(){
     div.onclick=function(){plToggle(a.id);};
     rightEl.appendChild(div);
   });
+}
+
+async function dismissCarryover(id,text,el){
+  // Animate out
+  el.style.transition='opacity 0.3s';
+  el.style.opacity='0';
+  setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el);},300);
+  // Save to Supabase dismissed list
+  try{
+    await fetch('/.netlify/functions/checksync/dismiss',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:id})
+    });
+  }catch(e){console.log('dismiss error',e);}
 }
 
 async function plResetAll(){
