@@ -755,55 +755,44 @@ var plReady=false;
 
 async function plInit(){
   var today=todayStr();
-  // Render immediately with localStorage (instant on all devices)
   try{
-    var local=JSON.parse(localStorage.getItem('pl-'+today)||'{}');
-    plCache=local;
+    Object.keys(localStorage).forEach(function(k){
+      if(k.startsWith('pl-')&&k!=='pl-'+today)localStorage.removeItem(k);
+    });
   }catch(e){}
-  plRender();
-  plUpdateProgress();
-  // Then fetch from proxy and RE-RENDER when data arrives
   try{
-    var res=await fetch('https://bod-proxy.onrender.com/checklist?date='+today);
+    var res=await fetch('/.netlify/functions/checksync?date='+today);
     var rows=await res.json();
     if(Array.isArray(rows)&&rows.length>0&&rows[0].state){
-      var remoteCache=JSON.parse(rows[0].state);
-      Object.keys(remoteCache).forEach(function(k){plCache[k]=remoteCache[k];});
-      plRender();
-      plUpdateProgress();
+      plCache=JSON.parse(rows[0].state);
+    }else{
+      plCache={};
     }
-  }catch(e){console.log('proxy load error',e);}
+  }catch(e){
+    try{plCache=JSON.parse(localStorage.getItem('pl-'+today)||'{}');}catch(e2){plCache={};}
+  }
   plReady=true;
+  plRender();
+  plUpdateProgress();
 }
 
 async function plToggle(id){
+  if(!plReady)return;
   plCache[id]=!plCache[id];
   var el=document.getElementById('plitem-'+id);
   if(el)el.classList.toggle('done',!!plCache[id]);
   plUpdateProgress();
   var today=todayStr();
-  // Save to localStorage immediately
   try{localStorage.setItem('pl-'+today,JSON.stringify(plCache));}catch(e){}
-  // Save full state blob to Render proxy
   try{
-    await fetch('https://bod-proxy.onrender.com/checklist',{
+    var stateToSave=Object.fromEntries(Object.entries(plCache).filter(function(e){return e[1]===true;}));
+    await fetch('/.netlify/functions/checksync',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({date:today,state:JSON.stringify(plCache)})
+      body:JSON.stringify({date:today,state:JSON.stringify(stateToSave)})
     });
-  }catch(e){console.log('proxy save error',e);}
-  // If this is a task item, mark complete in Google Tasks
-  if(plCache[id]===false){return;}// only on check, not uncheck
-  var taskData=window.plTaskMap&&window.plTaskMap[id];
-  if(taskData){
-    try{
-      await fetch('https://bod-proxy.onrender.com/task/complete',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({task_id:taskData.task_id,tasklist_id:taskData.tasklist_id})
-      });
-    }catch(e){console.log('task complete error',e);}
-  }
+  }catch(e){console.log('checksync save error',e);}
+}
 }
 function plUpdateProgress(){
   var count=Object.values(plCache).filter(Boolean).length;
