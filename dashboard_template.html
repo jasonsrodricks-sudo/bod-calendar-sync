@@ -715,7 +715,7 @@ async function plToggle(id){
     await fetch('/.netlify/functions/checksync',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({date:today,state:JSON.stringify(plCache)})
+      body:JSON.stringify({date:today,state:JSON.stringify(Object.fromEntries(Object.entries(plCache).filter(function(e){return e[1]===true;})))})
     });
   }catch(e){console.log('checksync save error',e);}
 }
