@@ -63,8 +63,25 @@ def get_next_5_days(service, today_str):
                          'day_num': d.strftime('%-d'), 'events': []})
     return week
 
+def get_dismissed_ids():
+    """Fetch dismissed carryover IDs from Supabase"""
+    try:
+        sb_url = 'https://vtmzpjkjabuuyhsahhol.supabase.co'
+        sb_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0bXpwamtqYWJ1dXloc2FoaG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MTE4OTMsImV4cCI6MjA5MzE4Nzg5M30.EokwncNDVHsinnAqoHKNI9S0DW79t2N0hWpQhmMFlNQ'
+        res = requests.get(
+            f'{sb_url}/rest/v1/daily_checklist?date=eq.dismissed&select=state',
+            headers={'apikey': sb_key, 'Authorization': f'Bearer {sb_key}'}
+        )
+        data = res.json()
+        if data and data[0].get('state'):
+            return json.loads(data[0]['state'])
+    except:
+        pass
+    return {}
+
 def get_yesterdays_unchecked(service, today_str):
     base = datetime.strptime(today_str, '%Y-%m-%d')
+    dismissed = get_dismissed_ids()
     unchecked = []
     for days_back in range(1, 31):
         past_str = (base - timedelta(days=days_back)).strftime('%Y-%m-%d')
@@ -74,6 +91,9 @@ def get_yesterdays_unchecked(service, today_str):
                     and not e.get('start', {}).get('dateTime')
                     and not any(e.get('summary','').lower().startswith(p) for p in EXCLUDE_PREFIXES)):
                 title = e.get('summary','').lower()
+                safe_id = 'co' + str(abs(hash(title)) % 100000)
+                if dismissed.get(safe_id):
+                    continue
                 if not any(u.get('summary','').lower() == title for u in unchecked):
                     unchecked.append(e)
     print(f'Carrying over {len(unchecked)} unchecked items')
