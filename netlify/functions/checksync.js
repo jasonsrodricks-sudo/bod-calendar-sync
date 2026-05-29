@@ -24,8 +24,20 @@ exports.handler = async (event) => {
     'Prefer': 'resolution=merge-duplicates,return=minimal'
   };
 
+  const path = event.path || '';
+  const isDismiss = path.endsWith('/dismiss');
+
   try {
     if (event.httpMethod === 'GET') {
+      if (isDismiss) {
+        // Return list of dismissed carryover titles
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/daily_checklist?date=eq.dismissed&select=state`,
+          { headers: sbHeaders }
+        );
+        const data = await res.json();
+        return { statusCode: 200, headers, body: JSON.stringify(data) };
+      }
       const date = event.queryStringParameters?.date;
       if (!date) return { statusCode: 400, headers, body: JSON.stringify({error:'date required'}) };
       const res = await fetch(
@@ -38,6 +50,25 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === 'POST') {
       const body = JSON.parse(event.body || '{}');
+      if (isDismiss) {
+        // Merge new dismissed title into the dismissed list
+        const getRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/daily_checklist?date=eq.dismissed&select=state`,
+          { headers: sbHeaders }
+        );
+        const existing = await getRes.json();
+        let dismissed = {};
+        if (Array.isArray(existing) && existing.length > 0 && existing[0].state) {
+          dismissed = JSON.parse(existing[0].state);
+        }
+        dismissed[body.id] = true;
+        await fetch(`${SUPABASE_URL}/rest/v1/daily_checklist`, {
+          method: 'POST',
+          headers: sbHeaders,
+          body: JSON.stringify({date: 'dismissed', state: JSON.stringify(dismissed)})
+        });
+        return { statusCode: 200, headers, body: JSON.stringify({ok: true}) };
+      }
       const res = await fetch(`${SUPABASE_URL}/rest/v1/daily_checklist`, {
         method: 'POST',
         headers: sbHeaders,
