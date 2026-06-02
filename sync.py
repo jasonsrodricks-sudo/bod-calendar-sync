@@ -91,7 +91,7 @@ def get_yesterdays_unchecked(service, today_str):
                     and not e.get('start', {}).get('dateTime')
                     and not any(e.get('summary','').lower().startswith(p) for p in EXCLUDE_PREFIXES)):
                 title = e.get('summary','').lower()
-                safe_id = 'co' + str(abs(hash(title)) % 100000)
+                safe_id = 'co' + __import__('hashlib').md5(title.encode()).hexdigest()[:8]
                 if dismissed.get(safe_id):
                     continue
                 if not any(u.get('summary','').lower() == title for u in unchecked):
@@ -191,7 +191,7 @@ def build_dashboard(events, carryover=[], week_ahead=[], tasks=[]):
         idx += 1
     for e in carryover:
         title = e.get('summary', '').replace("'", "\\'")
-        safe_id = 'co' + str(abs(hash(title)) % 100000)
+        safe_id = 'co' + __import__('hashlib').md5(title.lower().encode()).hexdigest()[:8]
         a_items.append("  {id:'" + safe_id + "', time:'carry over', text:'" + title + "', sub:'from yesterday'}")
         task_map_items = []
     for t in tasks:
