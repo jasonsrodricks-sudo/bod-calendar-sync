@@ -687,35 +687,23 @@ var PL_AGENDA=[
   {id:'co5a068b6e', time:'carry over', text:'Fund prepaid card', sub:'from yesterday'},
   {id:'co4795aad5', time:'carry over', text:'Drop Craig\'s Wheels off', sub:'from yesterday'},
   {id:'co6c529d90', time:'carry over', text:'🌸 Kell\'s Flower Show — SoWa', sub:'from yesterday'},
-  {id:'co61bf25db', time:'carry over', text:'Lori’s fridge', sub:'from yesterday'},
   {id:'co8c8c9f96', time:'carry over', text:'Haig’s plan', sub:'from yesterday'},
-  {id:'co2d76033b', time:'carry over', text:'1962 mortgage payment', sub:'from yesterday'},
   {id:'cofb201cd8', time:'carry over', text:'Fix pipe', sub:'from yesterday'},
-  {id:'co6fc6d1e4', time:'carry over', text:'Cushions out and back from dry cleaner set up backyard', sub:'from yesterday'},
   {id:'co1ddfe63d', time:'carry over', text:'Board of Directors connection LLC', sub:'from yesterday'},
-  {id:'cobc6d125c', time:'carry over', text:'Viola at School', sub:'from yesterday'},
-  {id:'cof860ab41', time:'carry over', text:'Print dry erase pages', sub:'from yesterday'},
-  {id:'cob9342b49', time:'carry over', text:'Lori Marie', sub:'from yesterday'},
   {id:'coeb63893c', time:'carry over', text:'Brian\'s Ladders', sub:'from yesterday'},
   {id:'coc66a5711', time:'carry over', text:'Call Jill - Seaport', sub:'from yesterday'},
   {id:'cob351ff18', time:'carry over', text:'So couch', sub:'from yesterday'},
-  {id:'co2b93531a', time:'carry over', text:'Finish Wheels and get them on my truck', sub:'from yesterday'},
-  {id:'co77b3de92', time:'carry over', text:'Set up travel events — Canyon Ranch, Santi, Flights, Museum of Science', sub:'from yesterday'},
-  {id:'co2c0ba0a3', time:'carry over', text:'Cleaners at 55', sub:'from yesterday'},
   {id:'co629b8c8a', time:'carry over', text:'Schedule tattoo removal appointment', sub:'from yesterday'},
   {id:'co74f3b66a', time:'carry over', text:'Follow up with Theresa', sub:'from yesterday'},
   {id:'co8b822491', time:'carry over', text:'Credit card auto pay bills', sub:'from yesterday'},
   {id:'co1d479089', time:'carry over', text:'1/2 Day', sub:'from yesterday'},
   {id:'co45f75312', time:'carry over', text:'Organized Haig\'s job', sub:'from yesterday'},
   {id:'co434b932c', time:'carry over', text:'Canyon Ranch dates', sub:'from yesterday'},
-  {id:'co309ef7d6', time:'carry over', text:'Pool opening', sub:'from yesterday'},
   {id:'cof761ec0d', time:'carry over', text:'Mood board with Connor', sub:'from yesterday'},
   {id:'co8aa97b4e', time:'carry over', text:'Marie\'s fridge trim', sub:'from yesterday'},
   {id:'co0f4137ed', time:'carry over', text:'Windows', sub:'from yesterday'},
   {id:'coa2647ab6', time:'carry over', text:'Mom\'s book baby steps', sub:'from yesterday'},
   {id:'co1386432b', time:'carry over', text:'Organized tax plan', sub:'from yesterday'},
-  {id:'codfa0d9e6', time:'carry over', text:'Go to the city of Beverly to pay excise tax. Check P.O. Box first', sub:'from yesterday'},
-  {id:'cob7b64df1', time:'carry over', text:'Organize my actual wallet', sub:'from yesterday'},
   {id:'co74bb121a', time:'carry over', text:'Fix gutter', sub:'from yesterday'},
   {id:'task-MjUwdE5ac2dWOC1NQnFFXw', time:'task', text:'Document shared with you: "Life and Death Signs"', sub:'google tasks'},
   {id:'task-R2tiak9OSWNmNk1oQ0ZBdw', time:'task', text:'JetBlue booking confirmation for JASON  RODRICKS - OUEXND', sub:'google tasks'}
@@ -729,6 +717,7 @@ window.plTaskMap={
 };
 var plReady=false;
 
+var dismissedIds={};
 async function plInit(){
   var today=todayStr();
   // Clear stale localStorage from previous days
@@ -737,6 +726,14 @@ async function plInit(){
       if(k.startsWith('pl-')&&k!=='pl-'+today)localStorage.removeItem(k);
     });
   }catch(e){}
+  // Load dismissed carryover IDs
+  try{
+    var dres=await fetch('/.netlify/functions/checksync/dismiss');
+    var drows=await dres.json();
+    if(Array.isArray(drows)&&drows.length>0&&drows[0].state){
+      dismissedIds=JSON.parse(drows[0].state);
+    }
+  }catch(e){console.log('dismiss load error',e);}
   // Load from checksync (Netlify function) — single source of truth
   try{
     var res=await fetch('/.netlify/functions/checksync?date='+today);
@@ -808,7 +805,7 @@ function plRender(){
     });
   }
   // Carried Over — untimed items from past days (dismissed items hidden)
-  var carryover=PL_AGENDA.filter(function(a){return a.time==='carry over';});
+  var carryover=PL_AGENDA.filter(function(a){return a.time==='carry over'&&!dismissedIds[a.id];});
   if(carryover.length>0){
     var sep2=document.createElement('div');sep2.className='pl-section-sep carryover';sep2.textContent='Carried Over';
     leftEl.appendChild(sep2);
