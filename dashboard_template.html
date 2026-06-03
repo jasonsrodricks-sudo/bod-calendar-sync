@@ -675,6 +675,7 @@ var plCache={};
 var plTaskMap={};
 var plReady=false;
 
+var dismissedIds={};
 async function plInit(){
   var today=todayStr();
   // Clear stale localStorage from previous days
@@ -683,6 +684,14 @@ async function plInit(){
       if(k.startsWith('pl-')&&k!=='pl-'+today)localStorage.removeItem(k);
     });
   }catch(e){}
+  // Load dismissed carryover IDs
+  try{
+    var dres=await fetch('/.netlify/functions/checksync/dismiss');
+    var drows=await dres.json();
+    if(Array.isArray(drows)&&drows.length>0&&drows[0].state){
+      dismissedIds=JSON.parse(drows[0].state);
+    }
+  }catch(e){console.log('dismiss load error',e);}
   // Load from checksync (Netlify function) — single source of truth
   try{
     var res=await fetch('/.netlify/functions/checksync?date='+today);
@@ -754,7 +763,7 @@ function plRender(){
     });
   }
   // Carried Over — untimed items from past days (dismissed items hidden)
-  var carryover=PL_AGENDA.filter(function(a){return a.time==='carry over';});
+  var carryover=PL_AGENDA.filter(function(a){return a.time==='carry over'&&!dismissedIds[a.id];});
   if(carryover.length>0){
     var sep2=document.createElement('div');sep2.className='pl-section-sep carryover';sep2.textContent='Carried Over';
     leftEl.appendChild(sep2);
