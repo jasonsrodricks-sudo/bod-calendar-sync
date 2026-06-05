@@ -599,11 +599,11 @@ fetchWeather();
 // WEEK AHEAD
 // ═══════════════════════════════════════
 var WEEK_AHEAD=[
-  {label:'Fri Jun 5',events:['Game']},
-  {label:'Sat Jun 6',events:['Camping with kids']},
+  {label:'Sat Jun 6',events:[]},
   {label:'Sun Jun 7',events:[]},
   {label:'Mon Jun 8',events:['Ocean st']},
-  {label:'Tue Jun 9',events:['KDCC Group Coaching Session']}
+  {label:'Tue Jun 9',events:['KDCC Group Coaching Session']},
+  {label:'Wed Jun 10',events:[]}
 ];
 (function(){
   var el=document.getElementById('week-ahead-list');if(!el)return;
@@ -672,22 +672,22 @@ showQuote();
 // PUNCHLIST — SUPABASE SYNCED
 // ═══════════════════════════════════════
 var PL_PRIORITIES=[
-  {id:'p1',text:'Drop Syd',time:'7:30 AM'},
-  {id:'p2',text:'🏋️ Gym',time:'8:00 AM'},
-  {id:'p3',text:'Pick up Syd',time:'1:45 PM'}
+  {id:'p1',text:'🏋️ Gym',time:'8:00 AM'},
+  {id:'p2',text:'🌅 Morning Work Block',time:'5:30 AM'},
+  {id:'p3',text:'🔨 Construction & Admin',time:'9:30 AM'}
 ];
 var PL_AGENDA=[
-  {id:'a1', time:'5:30 AM', text:'🌅 Morning Work Block', sub:''},
-  {id:'a2', time:'9:30 AM', text:'🔨 Construction & Admin', sub:''},
-  {id:'a3', time:'all day', text:'Prepaid', sub:''},
-  {id:'a4', time:'all day', text:'Lori\'s permitting process', sub:''},
-  {id:'a5', time:'all day', text:'Follow up with Antonio', sub:''},
-  {id:'a6', time:'all day', text:'Prepaid credit card', sub:''},
-  {id:'a7', time:'all day', text:'Dan\'s pole', sub:''},
-  {id:'a8', time:'all day', text:'Bondof100', sub:''},
-  {id:'a9', time:'all day', text:'Insurance payment', sub:''},
-  {id:'a10', time:'all day', text:'Call Elaine', sub:''},
-  {id:'co92290ccb', time:'carry over', text:'Softball', sub:'from yesterday'},
+  {id:'a1', time:'6:00 PM', text:'Game', sub:''},
+  {id:'a2', time:'all day', text:'Field Day', sub:''},
+  {id:'a3', time:'all day', text:'Hair', sub:''},
+  {id:'co834e703c', time:'carry over', text:'Prepaid', sub:'from yesterday'},
+  {id:'coa8639ed1', time:'carry over', text:'Lori\'s permitting process', sub:'from yesterday'},
+  {id:'co7c2b8df3', time:'carry over', text:'Follow up with Antonio', sub:'from yesterday'},
+  {id:'co3ca0ad76', time:'carry over', text:'Prepaid credit card', sub:'from yesterday'},
+  {id:'co071dc164', time:'carry over', text:'Dan\'s pole', sub:'from yesterday'},
+  {id:'coef31650a', time:'carry over', text:'Bondof100', sub:'from yesterday'},
+  {id:'co6a8379eb', time:'carry over', text:'Insurance payment', sub:'from yesterday'},
+  {id:'coc5b8381a', time:'carry over', text:'Call Elaine', sub:'from yesterday'},
   {id:'cod64b65ba', time:'carry over', text:'Seaport Photo Booth', sub:'from yesterday'},
   {id:'coaeae78a5', time:'carry over', text:'Describe the ice cream bar dry dock', sub:'from yesterday'},
   {id:'co5a068b6e', time:'carry over', text:'Fund prepaid card', sub:'from yesterday'},
@@ -702,10 +702,6 @@ var PL_AGENDA=[
   {id:'co629b8c8a', time:'carry over', text:'Schedule tattoo removal appointment', sub:'from yesterday'},
   {id:'co74f3b66a', time:'carry over', text:'Follow up with Theresa', sub:'from yesterday'},
   {id:'co8b822491', time:'carry over', text:'Credit card auto pay bills', sub:'from yesterday'},
-  {id:'co45f75312', time:'carry over', text:'Organized Haig\'s job', sub:'from yesterday'},
-  {id:'co434b932c', time:'carry over', text:'Canyon Ranch dates', sub:'from yesterday'},
-  {id:'cof761ec0d', time:'carry over', text:'Mood board with Connor', sub:'from yesterday'},
-  {id:'co8aa97b4e', time:'carry over', text:'Marie\'s fridge trim', sub:'from yesterday'},
   {id:'task-MjUwdE5ac2dWOC1NQnFFXw', time:'task', text:'Document shared with you: "Life and Death Signs"', sub:'google tasks'},
   {id:'task-R2tiak9OSWNmNk1oQ0ZBdw', time:'task', text:'JetBlue booking confirmation for JASON  RODRICKS - OUEXND', sub:'google tasks'}
 ];
