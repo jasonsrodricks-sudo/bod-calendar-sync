@@ -14,17 +14,87 @@ NETLIFY_SITE_ID = os.environ.get('NETLIFY_SITE_ID')
 NETLIFY_AUTH_TOKEN = os.environ.get('NETLIFY_AUTH_TOKEN')
 GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
 GITHUB_REPO = 'jasonsrodricks-sudo/bod-calendar-sync'
+SENDGRID_KEY = os.environ.get('SENDGRID_KEY', '')
+ALERT_EMAIL = 'jasonsrodricks@gmail.com'
+
+SB_URL = 'https://vtmzpjkjabuuyhsahhol.supabase.co'
+SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0bXpwamtqYWJ1dXloc2FoaG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MTE4OTMsImV4cCI6MjA5MzE4Nzg5M30.EokwncNDVHsinnAqoHKNI9S0DW79t2N0hWpQhmMFlNQ'
 
 PRIORITY_TRIGGERS = ['meet', 'drop', 'call', 'session', 'coaching', 'pick up',
                      'deliver', 'ship', 'pay', 'appointment', 'top priority',
                      'gym', 'physical therapy', 'pt ']
 EXCLUDE_PREFIXES = ['bod —', 'bod-', 'bod build', 'bod fix']
 
+
+def send_token_renewal_email():
+    """Send email to Jay with one-click OAuth renewal link"""
+    auth_url = (
+        "https://accounts.google.com/o/oauth2/auth"
+        "?response_type=code"
+        "&client_id=936664048222-ehkmoo3n57cqbu0pdlvoofs9da48cq5v.apps.googleusercontent.com"
+        "&redirect_uri=http%3A%2F%2Flocalhost%3A8080"
+        "&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcalendar"
+        "+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ftasks"
+        "&access_type=offline&prompt=consent"
+    )
+    subject = "BOD Dashboard — Google token expired, needs 2-min fix"
+    body = f"""Hey Jay,
+
+Your BOD Dashboard Google token expired and the 5am sync failed today.
+
+Quick fix (2 minutes):
+1. Click this link and approve access: {auth_url}
+2. Copy the localhost:8080 URL from your browser
+3. Send it to Claude and say "refresh my dashboard token"
+
+That's it. Claude handles the rest.
+
+— Your Dashboard"""
+
+    if SENDGRID_KEY:
+        try:
+            res = requests.post(
+                'https://api.sendgrid.com/v3/mail/send',
+                headers={'Authorization': f'Bearer {SENDGRID_KEY}', 'Content-Type': 'application/json'},
+                json={
+                    'personalizations': [{'to': [{'email': ALERT_EMAIL}]}],
+                    'from': {'email': 'dashboard@northofbostonstudios.com', 'name': 'BOD Dashboard'},
+                    'subject': subject,
+                    'content': [{'type': 'text/plain', 'value': body}]
+                }
+            )
+            print(f'Alert email sent: {res.status_code}')
+        except Exception as e:
+            print(f'Email send error: {e}')
+    else:
+        print('No SENDGRID_KEY set — skipping email alert')
+
+
+def post_health_ping(status, message):
+    """Post daily health status to Supabase"""
+    try:
+        today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+        requests.post(
+            f'{SB_URL}/rest/v1/daily_checklist',
+            headers={
+                'apikey': SB_KEY,
+                'Authorization': f'Bearer {SB_KEY}',
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates,return=minimal'
+            },
+            json={'date': f'health-{today}', 'state': json.dumps({'status': status, 'message': message, 'ts': datetime.now(timezone.utc).isoformat()})}
+        )
+        print(f'Health ping: {status}')
+    except Exception as e:
+        print(f'Health ping error: {e}')
+
+
 def get_calendar_service():
     creds = Credentials.from_authorized_user_info(json.loads(TOKEN_JSON), SCOPES)
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
     return build('calendar', 'v3', credentials=creds)
+
 
 def get_events_for_day(service, date_str):
     start = date_str + 'T00:00:00-04:00'
@@ -35,6 +105,7 @@ def get_events_for_day(service, date_str):
         timeZone='America/New_York'
     ).execute()
     return events.get('items', [])
+
 
 def get_next_5_days(service, today_str):
     week = []
@@ -63,14 +134,13 @@ def get_next_5_days(service, today_str):
                          'day_num': d.strftime('%-d'), 'events': []})
     return week
 
+
 def get_dismissed_ids():
     """Fetch dismissed carryover IDs from Supabase"""
     try:
-        sb_url = 'https://vtmzpjkjabuuyhsahhol.supabase.co'
-        sb_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0bXpwamtqYWJ1dXloc2FoaG9sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MTE4OTMsImV4cCI6MjA5MzE4Nzg5M30.EokwncNDVHsinnAqoHKNI9S0DW79t2N0hWpQhmMFlNQ'
         res = requests.get(
-            f'{sb_url}/rest/v1/daily_checklist?date=eq.dismissed&select=state',
-            headers={'apikey': sb_key, 'Authorization': f'Bearer {sb_key}'}
+            f'{SB_URL}/rest/v1/daily_checklist?date=eq.dismissed&select=state',
+            headers={'apikey': SB_KEY, 'Authorization': f'Bearer {SB_KEY}'}
         )
         data = res.json()
         if data and data[0].get('state'):
@@ -78,6 +148,7 @@ def get_dismissed_ids():
     except:
         pass
     return {}
+
 
 def get_yesterdays_unchecked(service, today_str):
     base = datetime.strptime(today_str, '%Y-%m-%d')
@@ -91,13 +162,15 @@ def get_yesterdays_unchecked(service, today_str):
                     and not e.get('start', {}).get('dateTime')
                     and not any(e.get('summary','').lower().startswith(p) for p in EXCLUDE_PREFIXES)):
                 title = e.get('summary','').lower()
-                safe_id = 'co' + __import__('hashlib').md5(title.encode()).hexdigest()[:8]
+                safe_id = 'co' + hashlib.md5(title.encode()).hexdigest()[:8]
                 if dismissed.get(safe_id):
                     continue
                 if not any(u.get('summary','').lower() == title for u in unchecked):
                     unchecked.append(e)
     print(f'Carrying over {len(unchecked)} unchecked items')
     return unchecked
+
+
 def get_google_tasks(service):
     try:
         tasks_service = build('tasks', 'v1', credentials=service._http.credentials)
@@ -119,14 +192,17 @@ def get_google_tasks(service):
         print(f'Tasks error: {e}')
         return []
 
+
 def is_priority(event):
     title = event.get('summary', '').lower()
     if any(title.startswith(p) for p in EXCLUDE_PREFIXES):
         return False
     return any(t in title for t in PRIORITY_TRIGGERS)
 
+
 def is_excluded(event):
     return any(event.get('summary', '').lower().startswith(p) for p in EXCLUDE_PREFIXES)
+
 
 def format_time(dt_str):
     try:
@@ -138,8 +214,8 @@ def format_time(dt_str):
         print(f'Time parse error: {e}')
         return dt_str
 
+
 def build_dashboard(events, carryover=[], week_ahead=[], tasks=[]):
-    # Download fresh template from GitHub
     headers = {
         'Authorization': f'token {GITHUB_TOKEN}',
         'Accept': 'application/vnd.github.v3.raw'
@@ -169,47 +245,59 @@ def build_dashboard(events, carryover=[], week_ahead=[], tasks=[]):
 
     p_items = []
     for i, e in enumerate(priorities):
-        title = e.get('summary', '').replace("'", "\\'")
+        title = e.get('summary', '').replace("'", "\'")
         for phrase in ['top priority', '— top priority', 'top priority —']:
             title = title.replace(phrase, '').strip()
         time_str = format_time(e.get('start', {}).get('dateTime', '')) if e.get('start', {}).get('dateTime') else ''
         p_items.append("  {id:'p" + str(i+1) + "',text:'" + title + "',time:'" + time_str + "'}")
-    pl_priorities = 'var PL_PRIORITIES=[\n' + ',\n'.join(p_items) + '\n];'
+    pl_priorities = 'var PL_PRIORITIES=[
+' + ',
+'.join(p_items) + '
+];'
 
     a_items = []
     idx = 1
     priority_titles = {e.get('summary', '').lower() for e in priorities}
     for e in timed:
         if e.get('summary', '').lower() not in priority_titles:
-            title = e.get('summary', '').replace("'", "\\'")
+            title = e.get('summary', '').replace("'", "\'")
             time_str = format_time(e.get('start', {}).get('dateTime', ''))
             a_items.append("  {id:'a" + str(idx) + "', time:'" + time_str + "', text:'" + title + "', sub:''}")
             idx += 1
     for e in allday:
-        title = e.get('summary', '').replace("'", "\\'")
+        title = e.get('summary', '').replace("'", "\'")
         a_items.append("  {id:'a" + str(idx) + "', time:'all day', text:'" + title + "', sub:''}")
         idx += 1
     for e in carryover:
-        title = e.get('summary', '').replace("'", "\\'")
-        safe_id = 'co' + __import__('hashlib').md5(title.lower().encode()).hexdigest()[:8]
+        title = e.get('summary', '').replace("'", "\'")
+        safe_id = 'co' + hashlib.md5(title.lower().encode()).hexdigest()[:8]
         a_items.append("  {id:'" + safe_id + "', time:'carry over', text:'" + title + "', sub:'from yesterday'}")
-        task_map_items = []
+    task_map_items = []
     for t in tasks:
-        title = t.get('title', '').replace("'", "\\'")
-        task_id = t.get('id', '').replace("'", "\\'")
-        tasklist_id = t.get('tasklist_id', '@default').replace("'", "\\'")
+        title = t.get('title', '').replace("'", "\'")
+        task_id = t.get('id', '').replace("'", "\'")
+        tasklist_id = t.get('tasklist_id', '@default').replace("'", "\'")
         item_id = 'task-' + task_id
         a_items.append("  {id:'" + item_id + "', time:'task', text:'" + title + "', sub:'google tasks'}")
         task_map_items.append("  '" + item_id + "':{task_id:'" + task_id + "',tasklist_id:'" + tasklist_id + "'}")
         idx += 1
-    pl_agenda = 'var PL_AGENDA=[\n' + ',\n'.join(a_items) + '\n];'
-    pl_task_map = 'window.plTaskMap={\n' + ',\n'.join(task_map_items) + '\n};'
+    pl_agenda = 'var PL_AGENDA=[
+' + ',
+'.join(a_items) + '
+];'
+    pl_task_map = 'window.plTaskMap={
+' + ',
+'.join(task_map_items) + '
+};'
     week_items = []
     for day in week_ahead:
-        titles = [e.get('summary','').replace("'","\\'") for e in day['events']]
+        titles = [e.get('summary','').replace("'","\'") for e in day['events']]
         events_str = ','.join(["'" + t + "'" for t in titles])
         week_items.append("  {label:'" + day['day'] + ' ' + day['month'] + ' ' + day['day_num'] + "',events:[" + events_str + "]}")
-    week_js = 'var WEEK_AHEAD=[\n' + ',\n'.join(week_items) + '\n];'
+    week_js = 'var WEEK_AHEAD=[
+' + ',
+'.join(week_items) + '
+];'
 
     start_p = html.find('var PL_PRIORITIES=[')
     end_p = html.find('];', start_p) + 2
@@ -224,17 +312,16 @@ def build_dashboard(events, carryover=[], week_ahead=[], tasks=[]):
         end_w = html.find('];', start_w) + 2
         html = html[:start_w] + week_js + html[end_w:]
     else:
-        html = html.replace('var PL_PRIORITIES=[', week_js + '\nvar PL_PRIORITIES=[')
+        html = html.replace('var PL_PRIORITIES=[', week_js + '
+var PL_PRIORITIES=[')
 
     return html
 
+
 def deploy_to_netlify(html_content):
     """Push index.html to GitHub — Netlify auto-deploys from repo"""
-    import base64
     encoded = html_content.encode('utf-8')
     b64 = base64.b64encode(encoded).decode('utf-8')
-    
-    # Get current file SHA (required by GitHub API to update a file)
     headers = {
         'Authorization': f'token {GITHUB_TOKEN}',
         'Accept': 'application/vnd.github.v3+json'
@@ -242,8 +329,6 @@ def deploy_to_netlify(html_content):
     get_url = f'https://api.github.com/repos/{GITHUB_REPO}/contents/index.html'
     get_res = requests.get(get_url, headers=headers)
     sha = get_res.json().get('sha', '')
-    
-    # Push updated file
     push_res = requests.put(
         get_url,
         headers=headers,
@@ -254,16 +339,28 @@ def deploy_to_netlify(html_content):
         }
     )
     print(f'GitHub push: {push_res.status_code}')
+
+
 if __name__ == '__main__':
-    service = get_calendar_service()
-    eastern_now = datetime.now(timezone.utc) + timedelta(hours=-4)
-    today_str = eastern_now.strftime('%Y-%m-%d')
-    print(f'Today (Eastern): {today_str}')
-    events = get_events_for_day(service, today_str)
-    print(f'Found {len(events)} events today')
-    carryover = get_yesterdays_unchecked(service, today_str)
-    tasks = get_google_tasks(service)
-    week_ahead = get_next_5_days(service, today_str)
-    html = build_dashboard(events, carryover, week_ahead, tasks)
-    deploy_to_netlify(html)
-    print('Done!')
+    try:
+        service = get_calendar_service()
+        eastern_now = datetime.now(timezone.utc) + timedelta(hours=-4)
+        today_str = eastern_now.strftime('%Y-%m-%d')
+        print(f'Today (Eastern): {today_str}')
+        events = get_events_for_day(service, today_str)
+        print(f'Found {len(events)} events today')
+        carryover = get_yesterdays_unchecked(service, today_str)
+        tasks = get_google_tasks(service)
+        week_ahead = get_next_5_days(service, today_str)
+        html = build_dashboard(events, carryover, week_ahead, tasks)
+        deploy_to_netlify(html)
+        post_health_ping('ok', f'Synced {len(events)} events, {len(carryover)} carryover, {len(tasks)} tasks')
+        print('Done!')
+    except Exception as e:
+        error_msg = str(e)
+        print(f'SYNC FAILED: {error_msg}')
+        post_health_ping('error', error_msg)
+        if 'invalid_grant' in error_msg or 'Token has been expired' in error_msg or 'Bad Request' in error_msg:
+            print('Token expired — sending renewal email...')
+            send_token_renewal_email()
+        raise
