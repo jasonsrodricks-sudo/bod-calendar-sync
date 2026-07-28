@@ -599,11 +599,11 @@ fetchWeather();
 // WEEK AHEAD
 // ═══════════════════════════════════════
 var WEEK_AHEAD=[
-  {label:'Sat Jun 6',events:[]},
-  {label:'Sun Jun 7',events:[]},
-  {label:'Mon Jun 8',events:['Ocean st']},
-  {label:'Tue Jun 9',events:['KDCC Group Coaching Session']},
-  {label:'Wed Jun 10',events:[]}
+  {label:'Wed Jul 29',events:['🏗️ MOVE — Apartment: Clear bathroom → storage']},
+  {label:'Thu Jul 30',events:['🏗️ MOVE — Apartment: Clear middle room → storage','🏠 Remind Dan — Rowell Ave checks due']},
+  {label:'Fri Jul 31',events:['🏗️ MOVE — Apartment: Middle room overflow + kitchen start']},
+  {label:'Sat Aug 1',events:['💰 Cape Ann Storage - $310.00 (TD Bank Checking)','Send mom $100 ($250 total)','🏗️ MOVE — Apartment: Clear kitchen → storage']},
+  {label:'Sun Aug 2',events:['🏗️ MOVE — Apartment: Kitchen overflow + living room start']}
 ];
 (function(){
   var el=document.getElementById('week-ahead-list');if(!el)return;
@@ -673,44 +673,24 @@ showQuote();
 // ═══════════════════════════════════════
 var PL_PRIORITIES=[
   {id:'p1',text:'🏋️ Gym',time:'8:00 AM'},
-  {id:'p2',text:'🌅 Morning Work Block',time:'5:30 AM'},
-  {id:'p3',text:'🔨 Construction & Admin',time:'9:30 AM'}
+  {id:'p2',text:'Pick up Syd',time:'1:45 PM'},
+  {id:'p3',text:'🌅 Morning Work Block',time:'5:30 AM'}
 ];
 var PL_AGENDA=[
-  {id:'a1', time:'6:00 PM', text:'Game', sub:''},
-  {id:'a2', time:'all day', text:'Field Day', sub:''},
-  {id:'a3', time:'all day', text:'Hair', sub:''},
-  {id:'co834e703c', time:'carry over', text:'Prepaid', sub:'from yesterday'},
-  {id:'coa8639ed1', time:'carry over', text:'Lori\'s permitting process', sub:'from yesterday'},
-  {id:'co7c2b8df3', time:'carry over', text:'Follow up with Antonio', sub:'from yesterday'},
-  {id:'co3ca0ad76', time:'carry over', text:'Prepaid credit card', sub:'from yesterday'},
-  {id:'co071dc164', time:'carry over', text:'Dan\'s pole', sub:'from yesterday'},
-  {id:'coef31650a', time:'carry over', text:'Bondof100', sub:'from yesterday'},
-  {id:'co6a8379eb', time:'carry over', text:'Insurance payment', sub:'from yesterday'},
-  {id:'coc5b8381a', time:'carry over', text:'Call Elaine', sub:'from yesterday'},
-  {id:'cod64b65ba', time:'carry over', text:'Seaport Photo Booth', sub:'from yesterday'},
-  {id:'coaeae78a5', time:'carry over', text:'Describe the ice cream bar dry dock', sub:'from yesterday'},
-  {id:'co5a068b6e', time:'carry over', text:'Fund prepaid card', sub:'from yesterday'},
-  {id:'co4795aad5', time:'carry over', text:'Drop Craig\'s Wheels off', sub:'from yesterday'},
+  {id:'a1', time:'9:00 AM', text:'🏗️ MOVE — Apartment: Clear hallway → storage', sub:''},
+  {id:'a2', time:'9:30 AM', text:'🔨 Construction & Admin', sub:''},
+  {id:'co6a95cf11', time:'carry over', text:'Welding supply place', sub:'from yesterday'},
+  {id:'co24b2cf6b', time:'carry over', text:'Recycling', sub:'from yesterday'},
   {id:'co6c529d90', time:'carry over', text:'🌸 Kell\'s Flower Show — SoWa', sub:'from yesterday'},
-  {id:'co8c8c9f96', time:'carry over', text:'Haig’s plan', sub:'from yesterday'},
-  {id:'cofb201cd8', time:'carry over', text:'Fix pipe', sub:'from yesterday'},
-  {id:'co1ddfe63d', time:'carry over', text:'Board of Directors connection LLC', sub:'from yesterday'},
-  {id:'coeb63893c', time:'carry over', text:'Brian\'s Ladders', sub:'from yesterday'},
-  {id:'coc66a5711', time:'carry over', text:'Call Jill - Seaport', sub:'from yesterday'},
-  {id:'cob351ff18', time:'carry over', text:'So couch', sub:'from yesterday'},
-  {id:'co629b8c8a', time:'carry over', text:'Schedule tattoo removal appointment', sub:'from yesterday'},
-  {id:'co74f3b66a', time:'carry over', text:'Follow up with Theresa', sub:'from yesterday'},
-  {id:'co8b822491', time:'carry over', text:'Credit card auto pay bills', sub:'from yesterday'},
-  {id:'task-MjUwdE5ac2dWOC1NQnFFXw', time:'task', text:'Document shared with you: "Life and Death Signs"', sub:'google tasks'},
-  {id:'task-R2tiak9OSWNmNk1oQ0ZBdw', time:'task', text:'JetBlue booking confirmation for JASON  RODRICKS - OUEXND', sub:'google tasks'}
+  {id:'co73ed6e48', time:'carry over', text:'Lori leaves again', sub:'from yesterday'},
+  {id:'cob68a9468', time:'carry over', text:'Father\'s Day', sub:'from yesterday'},
+  {id:'task-M1NsMkhqS2N3VUcwbV9rMQ', time:'task', text:'Rear window', sub:'google tasks'}
 ];
 var PL_TOTAL=PL_PRIORITIES.length+PL_AGENDA.length;
 
 var plCache={};
 window.plTaskMap={
-  'task-MjUwdE5ac2dWOC1NQnFFXw':{task_id:'MjUwdE5ac2dWOC1NQnFFXw',tasklist_id:'MDgxOTU2Njc4ODIzMDc3NDIzMjg6MDow'},
-  'task-R2tiak9OSWNmNk1oQ0ZBdw':{task_id:'R2tiak9OSWNmNk1oQ0ZBdw',tasklist_id:'MDgxOTU2Njc4ODIzMDc3NDIzMjg6MDow'}
+  'task-M1NsMkhqS2N3VUcwbV9rMQ':{task_id:'M1NsMkhqS2N3VUcwbV9rMQ',tasklist_id:'dUNRM0xCdEhOTkQ2V1Y1dg'}
 };
 var plReady=false;
 
